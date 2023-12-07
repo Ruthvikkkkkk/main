@@ -1,0 +1,50 @@
+Chrome 118.0.0.0 (Windows 10) ProcessDocumentsComponent should handle uploadFiles FAILED
+        NullInjectorError: R3InjectorError(DynamicTestModule)[ProcessPipelineService -> ProcessManagerService -> HttpCommunicatorWorkerService -> HttpClient -> HttpClient]:
+          NullInjectorError: No provider for HttpClient!
+        error properties: Object({ ngTempTokenPath: null, ngTokenPath: [ 'ProcessPipelineService', 'ProcessManagerService', 'HttpCommunicatorWorkerService', 'HttpClient', 'HttpClient' ] })
+            at <Jasmine>
+            at NullInjector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:1013:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11186:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11186:1)
+            at injectInjectorOnly (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:899:1)
+            at ɵɵinject (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:903:1)
+            at Object.HttpCommunicatorWorkerService_Factory [as factory] (ng:///HttpCommunicatorWorkerService/ɵfac.js:5:57)
+            at R3Injector.hydrate (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11354:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11175:1)
+            at injectInjectorOnly (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:899:1)
+            at ɵɵinject (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:903:1)
+        TypeError: Cannot read properties of undefined (reading 'uploadFiles')
+            at <Jasmine>
+            at UserContext.<anonymous> (http://localhost:9876/_karma_webpack_/src/project/modules/process/component/container/document-container/process-documents.component.spec.ts:17:15)
+            at ZoneDelegate.invoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:364:1)
+            at ProxyZoneSpec.push.QpwO.ProxyZoneSpec.onInvoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:292:1)
+            at ZoneDelegate.invoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:363:1)
+            at Zone.run (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:123:1)
+            at runInTestZone (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:545:1)
+            at UserContext.<anonymous> (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:560:1)
+            at <Jasmine>
+Chrome 118.0.0.0 (Windows 10): Executed 6 of 536 (5 FAILED) (skipped 466) (0 secs / 0.374 secs)
+Chrome 118.0.0.0 (Windows 10) ProcessDocumentsComponent should handle uploadFiles FAILED
+        NullInjectorError: R3InjectorError(DynamicTestModule)[ProcessPipelineService -> ProcessManagerService -> HttpCommunicatorWorkerService -> HttpClient -> HttpClient]:
+          NullInjectorError: No provider for HttpClient!
+        error properties: Object({ ngTempTokenPath: null, ngTokenPath: [ 'ProcessPipelineService', 'ProcessManagerService', 'HttpCommunicatorWorkerService', 'HttpClient', 'HttpClient' ] })
+            at <Jasmine>
+            at NullInjector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:1013:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11186:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11186:1)
+            at injectInjectorOnly (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:899:1)
+            at ɵɵinject (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:903:1)
+            at Object.HttpCommunicatorWorkerService_Factory [as factory] (ng:///HttpCommunicatorWorkerService/ɵfac.js:5:57)
+            at R3Injector.hydrate (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11354:1)
+            at R3Injector.get (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:11175:1)
+            at injectInjectorOnly (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:899:1)
+            at ɵɵinject (http://localhost:9876/_karma_webpack_/node_modules/@angular/core/fesm2015/core.js:903:1)
+        TypeError: Cannot read properties of undefined (reading 'uploadFiles')
+            at <Jasmine>
+            at UserContext.<anonymous> (http://localhost:9876/_karma_webpack_/src/project/modules/process/component/container/document-container/process-documents.component.spec.ts:17:15)
+            at ZoneDelegate.invoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:364:1)
+            at ProxyZoneSpec.push.QpwO.ProxyZoneSpec.onInvoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:292:1)
+            at ZoneDelegate.invoke (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:363:1)
+            at Zone.run (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-evergreen.js:123:1)
+            at runInTestZone (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:545:1)
+            at UserContext.<anonymous> (http://localhost:9876/_karma_webpack_/node_modules/zone.js/dist/zone-testing.js:560:1)
