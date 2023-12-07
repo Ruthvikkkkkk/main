@@ -1,0 +1,338 @@
+import { AfterViewInit, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
+import { GridApi, GridReadyEvent } from "ag-grid-community";
+import { UiToastDTO } from "project/core/model/ui-toast-dto";
+import { User } from "project/ground-work/intialization/modals/user.dto";
+import { ColumnModel } from "project/modules/bpq/metadata-framework/model/ui/component/column.model";
+import { ColumnDetails } from "project/modules/process/model/common/column-details-dto";
+import { StateDetails } from "project/modules/process/model/common/state-dto";
+import { UIStoryRequestDTO } from "project/modules/process/model/common/ui-story-request-dto";
+import { UIUserStoryDetails } from "project/modules/process/model/ui/ui-user-story-details-dto";
+import { UIUserStoryDocument } from "project/modules/process/model/ui/ui-user-story-document-dto";
+import { ProcessPipelineService } from "project/modules/process/service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "project/modules/process/service/util/process-storage.service";
+import { ProcessConstants } from "project/modules/process/service/util/process.constants";
+import { SharedService } from "project/shared/services/shared-service/shared.service";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+import { GenericConstants } from "project/shared/services/util/generic-constants";
+import { StorageService } from "project/shared/services/util/storage.service";
+import { Subscription } from "rxjs";
+
+@Component({
+    selector: 'app-process-documents',
+    templateUrl: './process-documents.component.html'
+  })
+export class ProcessDocumentsComponent implements OnInit,AfterViewInit,OnChanges,OnDestroy{
+
+    @Input() featureuuid:string;
+    @Input() storuuuid:string;
+    public uploadPopup: boolean = false;
+    public deletePopup:boolean = false;
+    public files: File[] = [];
+    public columnModel:ColumnModel[] = [];
+    public comment:string;
+    clientgridApi: GridApi;
+    adpgridApi: GridApi;
+    public isUploaded: boolean =true;
+    public adpPersona:string = GenericConstants.ADP_PERSONA;
+    public clientPersona:string = GenericConstants.CLIENT_PERSONA;
+    public deleteEvent: any;
+    private toastEvent : Subscription;
+
+    public adpGridDetails:any = {
+        tooltipShowDelay: 0,
+        tooltipHideDelay: 2000,
+        defaultColDef: {
+            suppressMenu: true,
+            wrapHeaderText: true,
+            autoHeaderHeight: true,
+            headerClass: 'whitespace-pre-wrap',
+            suppressSorting: true,
+            rowSelection: 'single',
+            cellStyle: () => {
+                return { border: "none" };
+            }
+        },
+        rowStyle: { background: 'white' },
+        rowHeight: 72,
+        icons: {
+            sortUnSort: '<sdf-icon icon="action-sort"></sdf-icon>'
+        },
+        columnDefs: [],
+        rowData: [],
+        alwaysShowHorizontalScroll: false,
+        onGridReady: (event: any) => this.onADPGridReady(event),
+        onFirstDataRendered: () => {
+            this.adpgridApi.sizeColumnsToFit();
+        },
+        suppressHorizontalScroll: true,
+        suppressCellSelection: true,
+        scrollbarWidth: 0
+    };
+    public clientGridDetails:any = {
+        tooltipShowDelay: 0,
+        tooltipHideDelay: 2000,
+        defaultColDef: {
+            suppressMenu: true,
+            wrapHeaderText: true,
+            autoHeaderHeight: true,
+            headerClass: 'whitespace-pre-wrap',
+            suppressSorting: true,
+            rowSelection: 'single',
+            cellStyle: () => {
+                return { border: "none" };
+            }
+        },
+        rowStyle: { background: 'white' },
+        rowHeight: 72,
+        icons: {
+            sortUnSort: '<sdf-icon icon="action-sort"></sdf-icon>'
+        },
+        columnDefs: [],
+        rowData: [],
+        alwaysShowHorizontalScroll: false,
+        onGridReady: (event: any) => this.onClientGridReady(event),
+
+        onFirstDataRendered: () => {
+            this.clientgridApi.sizeColumnsToFit();
+        },
+        suppressHorizontalScroll: true,
+        suppressCellSelection: true,
+        scrollbarWidth: 0
+    };
+   
+    constructor(public processPipeline:ProcessPipelineService,
+                public processStorage:ProcessStorageService,
+                public route: ActivatedRoute,
+                public sharedService:SharedService,
+                private storageService:StorageService){
+
+    }
+    ngOnDestroy(): void {
+        this.toastEvent.unsubscribe();
+    }
+    ngOnChanges(changes: SimpleChanges): void {
+        this.refreshLoadData();
+    }
+    ngAfterViewInit(): void {
+        ProcessConstants.DOCUMENT_COLUMN_DETAILS.forEach((columnDetail:ColumnDetails) => {
+            let columnModel:ColumnModel = new ColumnModel();
+            for (const [key, value] of Object.entries(columnDetail)) {
+                columnModel[`${key}`] = value;
+              }
+              if(columnDetail.$isCellRendererNeeded && columnDetail.$field === 'actions')
+              columnModel.cellRenderer =  (params: any) => {
+                const button: any = document.createElement('sdf-action-menu');
+                button.size = 'sm'
+                button.label = 'Actions';
+                button.iconOnly = true,
+                button.emphasis = "tertiary";
+                button.data = this.updateRowActionsList(params);
+                button.portalEnabled = true;
+                return button;
+              };
+              this.columnModel.push(columnModel);
+        });
+        this.adpGridDetails.columnDefs = this.columnModel;
+        this.clientGridDetails.columnDefs = this.columnModel;
+    }
+
+    ngOnInit(): void {
+     this.toastEvent =  this.sharedService.commonToastInfo.subscribe((res:UiToastDTO) => {
+         if(res.description.includes(ProcessConstants.ADPSIGNOFF_SUCCESS)){
+            this.refreshLoadData();
+         }
+        });
+    }
+ 
+ 
+
+    private updateRowActionsList(params: any): any {
+        let actionList = [{ label: 'Download', icon: 'action-download', value: 'download', action: this.downloadCurrentFile.bind(this, params)}];
+
+        if(params && params.data && params.data.persona && this.isDeleteButtonRequired(params.data.persona,this.sharedService.persona,GenericConstants.ADP_PERSONA)){
+            actionList.push({ label: 'Delete', icon: 'action-delete', value: 'delete', action: this.openDeletePopUp.bind(this, params) });
+        }
+        else  if(params && params.data && params.data.persona && this.isDeleteButtonRequired(params.data.persona,this.sharedService.persona,GenericConstants.CLIENT_PERSONA)){
+            actionList.push({ label: 'Delete', icon: 'action-delete', value: 'delete', action: this.openDeletePopUp.bind(this, params) });
+        } 
+        return actionList;
+    }
+
+    private isDeleteButtonRequired(documentPersona:string,currentPersona:string,personaConstant:string):boolean {
+         return currentPersona === personaConstant && documentPersona ===  personaConstant && this.disableDelete();
+    }
+
+    private openDeletePopUp(event: any): any {
+        this.refreshLoadData();
+        this.deletePopup = true ;
+        this.deleteEvent = event.data;
+    }
+    private downloadCurrentFile(ev: any): void {
+        if(this.featureuuid && this.storuuuid){
+        this.processPipeline.downloadFile(ev.data.fdId,this.route.snapshot.params['clientId'],this.featureuuid, this.storuuuid).subscribe((result: any) => {
+          if (result && !(result instanceof ErrorMap)) {
+            this.downloadFile(result);
+            this.refreshLoadData();
+        }
+        });
+    }
+      }
+    private refreshLoadData():void {
+        if (this.processStorage.userStoryDetails) {
+            this.loadData(this.processStorage.userStoryDetails.$adpDocuments, this.adpgridApi);
+            this.loadData(this.processStorage.userStoryDetails.$clientDocuments, this.clientgridApi);
+        }
+    }
+
+
+
+      private downloadFile(res: any): void {
+        const url = URL.createObjectURL(res.body);
+        var contentDisposition = res.headers.get('content-disposition');
+        var filename = contentDisposition!.split(';')[1].split('filename')[1].split('=')[1].trim();
+        var redirect = <HTMLAnchorElement>document.createElement("a");
+        redirect.href = url;
+        redirect.target = url;
+        redirect.download = filename;
+        document.body.appendChild(redirect);
+        redirect.click();
+        document.body.removeChild(redirect);
+    
+      }
+    onADPGridReady(event: GridReadyEvent) {
+       this.adpgridApi = event.api;
+       if(this.processStorage.userStoryDetails){
+           this.loadData(this.processStorage.userStoryDetails.$adpDocuments,this.adpgridApi);
+       }
+    }
+
+    onClientGridReady(event: any) {
+        this.clientgridApi = event.api;
+        if(this.processStorage.userStoryDetails){
+            this.loadData(this.processStorage.userStoryDetails.$clientDocuments,this.clientgridApi);
+        }
+    }
+
+    loadData(userStoryDocs:UIUserStoryDocument[], gridApi: GridApi) {
+        if(gridApi){
+        gridApi.setRowData([...userStoryDocs]);
+        gridApi.sizeColumnsToFit();
+        gridApi.refreshCells();
+        }
+    }
+
+    uploadFiles(event:any){
+        this.files = event.detail;
+        this.isUploaded=false;
+    }
+    disableSubmit(event:any){
+        this.isUploaded=true;
+    }
+
+    public documentChange(event:any): void{
+        this.isUploaded= event.detail.length? false : true;
+
+    }
+    
+    public onSubmitClick() {
+        this.isUploaded = true;
+        for (let file of this.files) {
+            if (this.featureuuid && this.storuuuid) {
+                this.processPipeline.uploadFile(file, this.route.snapshot.params['clientId'], this.featureuuid, this.storuuuid).subscribe((res: any | ErrorMap) => {
+                    if (!(res instanceof ErrorMap)) {
+                        let document = new UIUserStoryDocument();
+                        document.$fdId = res.documentId;
+                        document.$persona = this.sharedService.persona;
+                        document.$docName = file.name;
+                        document.$timeStamp = new Date().toUTCString();
+                        document.$comment = this.comment;
+                        let user: User | null = this.storageService.getUser();
+                        if (user) {
+                            document.$uploadedBy = user.firstName + ' ' + user.lastName;
+                        }
+                        this.comment = '';
+                        this.saveDocument(document);
+                    }
+                });
+            }
+        }
+        this.uploadPopup=false;
+    }
+
+   public saveDocument(document: UIUserStoryDocument): void {
+        if(this.processStorage.userStoryDetails){
+            this.processStorage.userStoryDetails.$documentsList = [document];
+            if(!this.processStorage.userStoryDetails.$orginaldocumentsList)
+            this.processStorage.userStoryDetails.$orginaldocumentsList = []
+            this.processStorage.userStoryDetails.$orginaldocumentsList.push(document);
+            if(this.processStorage.userStoryDetails.$commentsList)
+            this.processStorage.userStoryDetails.$commentsList.length = 0; 
+        }
+        if(this.featureuuid && this.storuuuid){
+            let uiStoryRequestSto = this.prepareStoryRequestDto(this.featureuuid, this.storuuuid);
+            this.processPipeline.saveUserStoryDetails(uiStoryRequestSto, ProcessConstants.ADD_DOCUMENT).subscribe((res)=> {
+                if(!(res instanceof ErrorMap)){
+                    if(this.processStorage.userStoryDetails && this.sharedService.persona === GenericConstants.ADP_PERSONA){
+                        this.processStorage.userStoryDetails.$adpDocuments.push(document);
+                        this.loadData(this.processStorage.userStoryDetails.$adpDocuments,this.adpgridApi);
+                    }else if( this.processStorage.userStoryDetails && this.sharedService.persona === GenericConstants.CLIENT_PERSONA){
+                        this.processStorage.userStoryDetails.$clientDocuments.push(document);
+                        this.loadData(this.processStorage.userStoryDetails.$clientDocuments,this.clientgridApi);
+                    }
+                }
+            });
+        }
+    }
+
+   public onCommentEntered(event: any) : void {
+        this.comment = event.detail;
+    }
+
+   public prepareStoryRequestDto(featureuuid: string, storyuuid : string):UIStoryRequestDTO{
+        let uiStoryRequestDto = new UIStoryRequestDTO();
+        uiStoryRequestDto.featureuuid = featureuuid;
+        uiStoryRequestDto.storyuuid = storyuuid;
+        return uiStoryRequestDto;
+    }
+
+    public isButtonEligibleToDisplay (persona:string):boolean{
+        let result = this.sharedService.persona === persona;
+        if(this.processStorage.userStoryDetails){
+            let storyStateDetails: StateDetails | undefined = this.processStorage.processStateMap.get(this.processStorage.userStoryDetails.$state + "-" + persona);
+            if (storyStateDetails && result)
+                result = !(storyStateDetails.$state.includes('APPROVED') || storyStateDetails.$state.includes('SIGNED_OFF')) ;
+        }
+        return result;
+    }
+
+    public disableDelete():boolean {
+        if(this.processStorage.userStoryDetails){
+            let storyStateDetails: StateDetails | undefined = this.processStorage.processStateMap.get(this.processStorage.userStoryDetails.$state + "-" + this.sharedService.persona);
+            if (storyStateDetails)
+                return !(storyStateDetails.$state.includes('APPROVED') || storyStateDetails.$state.includes('SIGNED_OFF')) ;
+        }  
+        return false;
+    }
+    public deleteDocument(ev:any): any {
+            if(this.featureuuid && this.storuuuid){
+                this.sharedService.isShowLoader=true;
+                this.processPipeline.deleteDocument(ev.fdId,this.route.snapshot.params['clientId'],this.featureuuid, this.storuuuid).subscribe((res:UIUserStoryDetails|ErrorMap) => {
+                
+                    if (res && !(res instanceof ErrorMap)) {
+                        if(this.processStorage.userStoryDetails){
+                            this.loadData(this.processStorage.userStoryDetails.$adpDocuments,this.adpgridApi);
+                            this.loadData(this.processStorage.userStoryDetails.$clientDocuments,this.clientgridApi);
+                    }
+                }
+                this.sharedService.isShowLoader=false;
+
+                });
+        }
+    }
+    public resetValues():void {
+        this.uploadPopup = false;
+        this.comment='';
+        this.isUploaded = true;
+    }
+}
