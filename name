@@ -1,0 +1,111 @@
+import { UIUserStoryDetails } from "../ui/ui-user-story-details-dto";
+import { ApiEmailContactDto } from "./api-email-contact-dto";
+
+export class ApiFeatureDto {
+    private _action: string;
+    private _assignedInfo: string;
+    private _featureName: string;
+    private _featureUUID: string;
+    private _helpText: string;
+    private _isEditAllowed: string;
+    private _isFeatureInactiveAllowed: string;
+    private _isSendToClientVisible: string;
+    private _state: string;
+    private _featureContactList: ApiEmailContactDto[] | undefined;
+    private _orginalState?: string | undefined;
+    private _userStoryDetailsList?: UIUserStoryDetails[] | undefined;
+    private _toolTipState?: string | undefined;
+      
+
+
+    /**
+     * Getter featureContactList
+     * @return {ApiEmailContactDto[] }
+     */
+	public get featureContactList(): ApiEmailContactDto[]|undefined  {
+		return this._featureContactList;
+	}
+
+    /**
+     * Setter featureContactList
+     * @param {ApiEmailContactDto[] } value
+     */
+	public set featureContactList(value: ApiEmailContactDto[]|undefined ) {
+		this._featureContactList = value;
+	}
+
+
+    public get assignedInfo(): string {
+        return this._assignedInfo;
+    }
+    public set assignedInfo(value: string) {
+        this._assignedInfo = value;
+    }
+    public get featureName(): string {
+        return this._featureName;
+    }
+    public set featureName(value: string) {
+        this._featureName = value;
+    }
+    public get featureUUID(): string {
+        return this._featureUUID;
+    }
+    public set featureUUID(value: string) {
+        this._featureUUID = value;
+    }
+    public get helpText(): string {
+        return this._helpText;
+    }
+    public set helpText(value: string) {
+        this._helpText = value;
+    }
+    public get isEditAllowed(): string {
+        return this._isEditAllowed;
+    }
+    public set isEditAllowed(value: string) {
+        this._isEditAllowed = value;
+    }
+    public get isFeatureInactiveAllowed(): string {
+        return this._isFeatureInactiveAllowed;
+    }
+    public set isFeatureInactiveAllowed(value: string) {
+        this._isFeatureInactiveAllowed = value;
+    }
+    public get isSendToClientVisible(): string {
+        return this._isSendToClientVisible;
+    }
+    public set isSendToClientVisible(value: string) {
+        this._isSendToClientVisible = value;
+    }
+    public get state(): string {
+        return this._state;
+    }
+    public set state(value: string) {
+        this._state = value;
+    }
+  
+    public get orginalState(): string | undefined {
+        return this._orginalState;
+    }
+    public set orginalState(value: string | undefined) {
+        this._orginalState = value;
+    }
+    public get userStoryDetailsList(): UIUserStoryDetails[] | undefined {
+        return this._userStoryDetailsList;
+    }
+    public set userStoryDetailsList(value: UIUserStoryDetails[] | undefined) {
+        this._userStoryDetailsList = value;
+    }
+    public get toolTipState(): string | undefined {
+        return this._toolTipState;
+    }
+    public set toolTipState(value: string | undefined) {
+        this._toolTipState = value;
+    }
+    public get action(): string {
+        return this._action;
+    }
+    public set action(value: string) {
+        this._action = value;
+    }
+}
