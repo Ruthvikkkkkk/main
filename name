@@ -1,54 +1,122 @@
-import { ApiUserStoryNotes } from './api-user-story-notes';
+export class ApiUserStoryDocument{
+    private _fdId: string;
+    private _persona: string;
+    private _comment: string;
+    private _uploadedBy: string;
+    private _timeStamp: string;
+    private _docName: string;
+    private _createElement: any;
 
-describe('ApiUserStoryNotes', () => {
-  let apiUserStoryNotes: ApiUserStoryNotes;
+    /**
+     * Getter fdId
+     * @return {string}
+     */
+	public get fdId(): string {
+		return this._fdId;
+	}
 
-  beforeEach(() => {
-    apiUserStoryNotes = new ApiUserStoryNotes();
-  });
+    /**
+     * Getter persona
+     * @return {string}
+     */
+	public get persona(): string {
+		return this._persona;
+	}
 
-  it('should create an instance', () => {
-    expect(apiUserStoryNotes).toBeTruthy();
-  });
+    /**
+     * Getter comment
+     * @return {string}
+     */
+	public get comment(): string {
+		return this._comment;
+	}
 
-  it('should have default values set', () => {
-    expect(apiUserStoryNotes.userStoryDescription).toBeUndefined();
-    expect(apiUserStoryNotes.specialRules).toBeUndefined();
-    expect(apiUserStoryNotes.testingRequirements).toBeUndefined();
-    expect(apiUserStoryNotes.acceptanceCriteria).toBeUndefined();
-  });
+    /**
+     * Getter uploadedBy
+     * @return {string}
+     */
+	public get uploadedBy(): string {
+		return this._uploadedBy;
+	}
 
-  it('should set and get userStoryDescription correctly', () => {
-    const mockUserStoryDescription = 'Sample User Story Description';
+    /**
+     * Getter timeStamp
+     * @return {string}
+     */
+	public get timeStamp(): string {
+		return this._timeStamp;
+	}
 
-    apiUserStoryNotes.userStoryDescription = mockUserStoryDescription;
+    /**
+     * Getter docName
+     * @return {string}
+     */
+	public get docName(): string {
+		return this._docName;
+	}
 
-    expect(apiUserStoryNotes.userStoryDescription).toEqual(mockUserStoryDescription);
-  });
+    /**
+     * Getter createElement
+     * @return {any}
+     */
+	public get createElement(): any {
+		return this._createElement;
+	}
 
-  it('should set and get specialRules correctly', () => {
-    const mockSpecialRules = 'Sample Special Rules';
+    /**
+     * Setter fdId
+     * @param {string} value
+     */
+	public set fdId(value: string) {
+		this._fdId = value;
+	}
 
-    apiUserStoryNotes.specialRules = mockSpecialRules;
+    /**
+     * Setter persona
+     * @param {string} value
+     */
+	public set persona(value: string) {
+		this._persona = value;
+	}
 
-    expect(apiUserStoryNotes.specialRules).toEqual(mockSpecialRules);
-  });
+    /**
+     * Setter comment
+     * @param {string} value
+     */
+	public set comment(value: string) {
+		this._comment = value;
+	}
 
-  it('should set and get testingRequirements correctly', () => {
-    const mockTestingRequirements = 'Sample Testing Requirements';
+    /**
+     * Setter uploadedBy
+     * @param {string} value
+     */
+	public set uploadedBy(value: string) {
+		this._uploadedBy = value;
+	}
 
-    apiUserStoryNotes.testingRequirements = mockTestingRequirements;
+    /**
+     * Setter timeStamp
+     * @param {string} value
+     */
+	public set timeStamp(value: string) {
+		this._timeStamp = value;
+	}
 
-    expect(apiUserStoryNotes.testingRequirements).toEqual(mockTestingRequirements);
-  });
+    /**
+     * Setter docName
+     * @param {string} value
+     */
+	public set docName(value: string) {
+		this._docName = value;
+	}
 
-  it('should set and get acceptanceCriteria correctly', () => {
-    const mockAcceptanceCriteria = 'Sample Acceptance Criteria';
+    /**
+     * Setter createElement
+     * @param {any} value
+     */
+	public set createElement(value: any) {
+		this._createElement = value;
+	}
 
-    apiUserStoryNotes.acceptanceCriteria = mockAcceptanceCriteria;
-
-    expect(apiUserStoryNotes.acceptanceCriteria).toEqual(mockAcceptanceCriteria);
-  });
-
-  // Add more test cases as needed
-});
+}
