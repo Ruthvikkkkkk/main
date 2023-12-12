@@ -1,0 +1,32 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FeatureListingComponent } from './feature-listing-container.component';
+
+describe('FeatureListingComponent', () => {
+  let component: FeatureListingComponent;
+  let fixture: ComponentFixture<FeatureListingComponent>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      declarations: [FeatureListingComponent],
+    });
+
+    fixture = TestBed.createComponent(FeatureListingComponent);
+    component = fixture.componentInstance;
+  });
+
+  it('should filter empty email dtos', () => {
+    const emptyEmailDto = { email: '' };
+    const validEmailDto = { email: 'test@example.com' };
+    const contacts = [
+      { $email: '', $contactType: 'ADP' },
+      { $email: 'test@example.com', $contactType: 'Client' },
+      emptyEmailDto, // Should be filtered out
+      validEmailDto, // Should be included
+    ];
+
+    const filteredContacts = component['filterEmptyEmailDtos'](contacts);
+
+    expect(filteredContacts).toContain(validEmailDto);
+    expect(filteredContacts).not.toContain(emptyEmailDto);
+  });
+});
