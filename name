@@ -1,122 +1,81 @@
-export class ApiUserStoryDocument{
-    private _fdId: string;
-    private _persona: string;
-    private _comment: string;
-    private _uploadedBy: string;
-    private _timeStamp: string;
-    private _docName: string;
-    private _createElement: any;
+import { ApiUserStoryDocument } from './api-user-story-document';
 
-    /**
-     * Getter fdId
-     * @return {string}
-     */
-	public get fdId(): string {
-		return this._fdId;
-	}
+describe('ApiUserStoryDocument', () => {
+  let apiUserStoryDocument: ApiUserStoryDocument;
 
-    /**
-     * Getter persona
-     * @return {string}
-     */
-	public get persona(): string {
-		return this._persona;
-	}
+  beforeEach(() => {
+    apiUserStoryDocument = new ApiUserStoryDocument();
+  });
 
-    /**
-     * Getter comment
-     * @return {string}
-     */
-	public get comment(): string {
-		return this._comment;
-	}
+  it('should create an instance', () => {
+    expect(apiUserStoryDocument).toBeTruthy();
+  });
 
-    /**
-     * Getter uploadedBy
-     * @return {string}
-     */
-	public get uploadedBy(): string {
-		return this._uploadedBy;
-	}
+  it('should have default values set', () => {
+    expect(apiUserStoryDocument.fdId).toBeUndefined();
+    expect(apiUserStoryDocument.persona).toBeUndefined();
+    expect(apiUserStoryDocument.comment).toBeUndefined();
+    expect(apiUserStoryDocument.uploadedBy).toBeUndefined();
+    expect(apiUserStoryDocument.timeStamp).toBeUndefined();
+    expect(apiUserStoryDocument.docName).toBeUndefined();
+    expect(apiUserStoryDocument.createElement).toBeUndefined();
+  });
 
-    /**
-     * Getter timeStamp
-     * @return {string}
-     */
-	public get timeStamp(): string {
-		return this._timeStamp;
-	}
+  it('should set and get fdId correctly', () => {
+    const mockFdId = 'SampleFdId';
 
-    /**
-     * Getter docName
-     * @return {string}
-     */
-	public get docName(): string {
-		return this._docName;
-	}
+    apiUserStoryDocument.fdId = mockFdId;
 
-    /**
-     * Getter createElement
-     * @return {any}
-     */
-	public get createElement(): any {
-		return this._createElement;
-	}
+    expect(apiUserStoryDocument.fdId).toEqual(mockFdId);
+  });
 
-    /**
-     * Setter fdId
-     * @param {string} value
-     */
-	public set fdId(value: string) {
-		this._fdId = value;
-	}
+  it('should set and get persona correctly', () => {
+    const mockPersona = 'Sample Persona';
 
-    /**
-     * Setter persona
-     * @param {string} value
-     */
-	public set persona(value: string) {
-		this._persona = value;
-	}
+    apiUserStoryDocument.persona = mockPersona;
 
-    /**
-     * Setter comment
-     * @param {string} value
-     */
-	public set comment(value: string) {
-		this._comment = value;
-	}
+    expect(apiUserStoryDocument.persona).toEqual(mockPersona);
+  });
 
-    /**
-     * Setter uploadedBy
-     * @param {string} value
-     */
-	public set uploadedBy(value: string) {
-		this._uploadedBy = value;
-	}
+  it('should set and get comment correctly', () => {
+    const mockComment = 'Sample Comment';
 
-    /**
-     * Setter timeStamp
-     * @param {string} value
-     */
-	public set timeStamp(value: string) {
-		this._timeStamp = value;
-	}
+    apiUserStoryDocument.comment = mockComment;
 
-    /**
-     * Setter docName
-     * @param {string} value
-     */
-	public set docName(value: string) {
-		this._docName = value;
-	}
+    expect(apiUserStoryDocument.comment).toEqual(mockComment);
+  });
 
-    /**
-     * Setter createElement
-     * @param {any} value
-     */
-	public set createElement(value: any) {
-		this._createElement = value;
-	}
+  it('should set and get uploadedBy correctly', () => {
+    const mockUploadedBy = 'Sample Uploaded By';
 
-}
+    apiUserStoryDocument.uploadedBy = mockUploadedBy;
+
+    expect(apiUserStoryDocument.uploadedBy).toEqual(mockUploadedBy);
+  });
+
+  it('should set and get timeStamp correctly', () => {
+    const mockTimeStamp = 'Sample Time Stamp';
+
+    apiUserStoryDocument.timeStamp = mockTimeStamp;
+
+    expect(apiUserStoryDocument.timeStamp).toEqual(mockTimeStamp);
+  });
+
+  it('should set and get docName correctly', () => {
+    const mockDocName = 'Sample Doc Name';
+
+    apiUserStoryDocument.docName = mockDocName;
+
+    expect(apiUserStoryDocument.docName).toEqual(mockDocName);
+  });
+
+  it('should set and get createElement correctly', () => {
+    const mockCreateElement = /* mock your createElement value here */;
+
+    apiUserStoryDocument.createElement = mockCreateElement;
+
+    expect(apiUserStoryDocument.createElement).toEqual(mockCreateElement);
+  });
+
+  // Add more test cases as needed
+});
