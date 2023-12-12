@@ -1,81 +1,196 @@
-import { ApiUserStoryDocument } from './api-user-story-document';
+import { ApiUserStoryComment } from "./api-user-story-comment-dto";
+import { ApiUserStoryDocument } from "./api-user-story-document-dto";
+import { ApiUserStoryNotes } from "./api-user-story-notes-dto";
 
-describe('ApiUserStoryDocument', () => {
-  let apiUserStoryDocument: ApiUserStoryDocument;
+export class ApiUserStoryDetails {
+    
+    private _storyName: string;
+    private _storyuuid: string;
+    private _state: string;
+    private _isEditAllowed: boolean;
+    private _isApproveAndSubmitVisible: boolean;
+    private _supportText: string;
+    private _assignedInfo: string;
+    private _description: string;
+    
+    private _notes: ApiUserStoryNotes;
+    private _documentsList: ApiUserStoryDocument[];
+    private _commentsList: ApiUserStoryComment[];
 
-  beforeEach(() => {
-    apiUserStoryDocument = new ApiUserStoryDocument();
-  });
+    /**
+     * Getter storyName
+     * @return {string}
+     */
+	public get storyName(): string {
+		return this._storyName;
+	}
 
-  it('should create an instance', () => {
-    expect(apiUserStoryDocument).toBeTruthy();
-  });
+    /**
+     * Getter storyuuid
+     * @return {string}
+     */
+	public get storyuuid(): string {
+		return this._storyuuid;
+	}
 
-  it('should have default values set', () => {
-    expect(apiUserStoryDocument.fdId).toBeUndefined();
-    expect(apiUserStoryDocument.persona).toBeUndefined();
-    expect(apiUserStoryDocument.comment).toBeUndefined();
-    expect(apiUserStoryDocument.uploadedBy).toBeUndefined();
-    expect(apiUserStoryDocument.timeStamp).toBeUndefined();
-    expect(apiUserStoryDocument.docName).toBeUndefined();
-    expect(apiUserStoryDocument.createElement).toBeUndefined();
-  });
+    /**
+     * Getter state
+     * @return {string}
+     */
+	public get state(): string {
+		return this._state;
+	}
 
-  it('should set and get fdId correctly', () => {
-    const mockFdId = 'SampleFdId';
+    /**
+     * Getter isEditAllowed
+     * @return {boolean}
+     */
+	public get isEditAllowed(): boolean {
+		return this._isEditAllowed;
+	}
 
-    apiUserStoryDocument.fdId = mockFdId;
+    /**
+     * Getter isApproveAndSubmitVisible
+     * @return {boolean}
+     */
+	public get isApproveAndSubmitVisible(): boolean {
+		return this._isApproveAndSubmitVisible;
+	}
 
-    expect(apiUserStoryDocument.fdId).toEqual(mockFdId);
-  });
+    /**
+     * Getter supportText
+     * @return {string}
+     */
+	public get supportText(): string {
+		return this._supportText;
+	}
 
-  it('should set and get persona correctly', () => {
-    const mockPersona = 'Sample Persona';
+    /**
+     * Getter assignedInfo
+     * @return {string}
+     */
+	public get assignedInfo(): string {
+		return this._assignedInfo;
+	}
 
-    apiUserStoryDocument.persona = mockPersona;
+    /**
+     * Getter description
+     * @return {string}
+     */
+	public get description(): string {
+		return this._description;
+	}
 
-    expect(apiUserStoryDocument.persona).toEqual(mockPersona);
-  });
+    /**
+     * Getter notes
+     * @return {ApiUserStoryNotes}
+     */
+	public get notes(): ApiUserStoryNotes {
+		return this._notes;
+	}
 
-  it('should set and get comment correctly', () => {
-    const mockComment = 'Sample Comment';
+    /**
+     * Getter documentsList
+     * @return {ApiUserStoryDocument[]}
+     */
+	public get documentsList(): ApiUserStoryDocument[] {
+		return this._documentsList;
+	}
 
-    apiUserStoryDocument.comment = mockComment;
+    /**
+     * Getter commentsList
+     * @return {ApiUserStoryComment[]}
+     */
+	public get commentsList(): ApiUserStoryComment[] {
+		return this._commentsList;
+	}
 
-    expect(apiUserStoryDocument.comment).toEqual(mockComment);
-  });
+    /**
+     * Setter storyName
+     * @param {string} value
+     */
+	public set storyName(value: string) {
+		this._storyName = value;
+	}
 
-  it('should set and get uploadedBy correctly', () => {
-    const mockUploadedBy = 'Sample Uploaded By';
+    /**
+     * Setter storyuuid
+     * @param {string} value
+     */
+	public set storyuuid(value: string) {
+		this._storyuuid = value;
+	}
 
-    apiUserStoryDocument.uploadedBy = mockUploadedBy;
+    /**
+     * Setter state
+     * @param {string} value
+     */
+	public set state(value: string) {
+		this._state = value;
+	}
 
-    expect(apiUserStoryDocument.uploadedBy).toEqual(mockUploadedBy);
-  });
+    /**
+     * Setter isEditAllowed
+     * @param {boolean} value
+     */
+	public set isEditAllowed(value: boolean) {
+		this._isEditAllowed = value;
+	}
 
-  it('should set and get timeStamp correctly', () => {
-    const mockTimeStamp = 'Sample Time Stamp';
+    /**
+     * Setter isApproveAndSubmitVisible
+     * @param {boolean} value
+     */
+	public set isApproveAndSubmitVisible(value: boolean) {
+		this._isApproveAndSubmitVisible = value;
+	}
 
-    apiUserStoryDocument.timeStamp = mockTimeStamp;
+    /**
+     * Setter supportText
+     * @param {string} value
+     */
+	public set supportText(value: string) {
+		this._supportText = value;
+	}
 
-    expect(apiUserStoryDocument.timeStamp).toEqual(mockTimeStamp);
-  });
+    /**
+     * Setter assignedInfo
+     * @param {string} value
+     */
+	public set assignedInfo(value: string) {
+		this._assignedInfo = value;
+	}
 
-  it('should set and get docName correctly', () => {
-    const mockDocName = 'Sample Doc Name';
+    /**
+     * Setter description
+     * @param {string} value
+     */
+	public set description(value: string) {
+		this._description = value;
+	}
 
-    apiUserStoryDocument.docName = mockDocName;
+    /**
+     * Setter notes
+     * @param {ApiUserStoryNotes} value
+     */
+	public set notes(value: ApiUserStoryNotes) {
+		this._notes = value;
+	}
 
-    expect(apiUserStoryDocument.docName).toEqual(mockDocName);
-  });
+    /**
+     * Setter documentsList
+     * @param {ApiUserStoryDocument[]} value
+     */
+	public set documentsList(value: ApiUserStoryDocument[]) {
+		this._documentsList = value;
+	}
 
-  it('should set and get createElement correctly', () => {
-    const mockCreateElement = /* mock your createElement value here */;
+    /**
+     * Setter commentsList
+     * @param {ApiUserStoryComment[]} value
+     */
+	public set commentsList(value: ApiUserStoryComment[]) {
+		this._commentsList = value;
+	}
 
-    apiUserStoryDocument.createElement = mockCreateElement;
-
-    expect(apiUserStoryDocument.createElement).toEqual(mockCreateElement);
-  });
-
-  // Add more test cases as needed
-});
+}    
