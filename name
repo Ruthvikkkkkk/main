@@ -1,45 +1,33 @@
-import { ApiUserStoryComment } from './api-user-story-comment';
+export class ApiStoryDto {
+    private _storyUUID: string;
+    private _storyName: string;
+    private _state: string;
+    private _supportText: string;
+    public get supportText(): string {
+        return this._supportText;
+    }
+    public set supportText(value: string) {
+        this._supportText = value;
+    }
 
-describe('ApiUserStoryComment', () => {
-  let apiUserStoryComment: ApiUserStoryComment;
+    public get storyUUID(): string {
+        return this._storyUUID
+    }
+    public set storyUUID(value: string) {
+        this._storyUUID = value;
+    }
 
-  beforeEach(() => {
-    apiUserStoryComment = new ApiUserStoryComment();
-  });
+    public get storyName(): string {
+        return this._storyName;
+    }
+    public set storyName(value: string) {
+        this._storyName = value;
+    }
 
-  it('should create an instance', () => {
-    expect(apiUserStoryComment).toBeTruthy();
-  });
-
-  it('should have default values set', () => {
-    expect(apiUserStoryComment.comment).toBeUndefined();
-    expect(apiUserStoryComment.date).toBeUndefined();
-    expect(apiUserStoryComment.commentedBy).toBeUndefined();
-  });
-
-  it('should set and get comment correctly', () => {
-    const mockComment = 'Sample Comment';
-
-    apiUserStoryComment.comment = mockComment;
-
-    expect(apiUserStoryComment.comment).toEqual(mockComment);
-  });
-
-  it('should set and get date correctly', () => {
-    const mockDate = 'Sample Date';
-
-    apiUserStoryComment.date = mockDate;
-
-    expect(apiUserStoryComment.date).toEqual(mockDate);
-  });
-
-  it('should set and get commentedBy correctly', () => {
-    const mockCommentedBy = 'Sample Commented By';
-
-    apiUserStoryComment.commentedBy = mockCommentedBy;
-
-    expect(apiUserStoryComment.commentedBy).toEqual(mockCommentedBy);
-  });
-
-  // Add more test cases as needed
-});
+    public get state(): string {
+        return this._state;
+    }
+    public set state(value: string) {
+        this._state = value;
+    }
+}
