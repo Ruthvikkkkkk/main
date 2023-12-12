@@ -1,59 +1,47 @@
-import { ApiEmailContactDto } from "./api-email-contact-dto";
-import { ApiFeatureDto } from "./api-feature-dto";
+import { ApiGeneralSettingDto } from './api-general-setting-dto';
+import { ApiEmailContactDto } from './api-email-contact-dto';
+import { ApiFeatureDto } from './api-feature-dto';
 
-export class ApiGeneralSettingDto {
-    private _product:string;
-    private _globalContacts:ApiEmailContactDto[];
-    private _features:ApiFeatureDto[];
+describe('ApiGeneralSettingDto', () => {
+  let apiGeneralSettingDto: ApiGeneralSettingDto;
 
+  beforeEach(() => {
+    apiGeneralSettingDto = new ApiGeneralSettingDto();
+  });
 
-    /**
-     * Getter product
-     * @return {string}
-     */
-	public get product(): string {
-		return this._product;
-	}
+  it('should create an instance', () => {
+    expect(apiGeneralSettingDto).toBeTruthy();
+  });
 
-    /**
-     * Getter globalContacts
-     * @return {ApiEmailContactDto[]}
-     */
-	public get globalContacts(): ApiEmailContactDto[] {
-		return this._globalContacts;
-	}
+  it('should have default values set', () => {
+    expect(apiGeneralSettingDto.product).toBeUndefined();
+    expect(apiGeneralSettingDto.globalContacts).toBeUndefined();
+    expect(apiGeneralSettingDto.features).toBeUndefined();
+  });
 
-    /**
-     * Getter features
-     * @return {ApiFeatureDto[]}
-     */
-	public get features(): ApiFeatureDto[] {
-		return this._features;
-	}
+  it('should set and get product correctly', () => {
+    const mockProduct = 'Sample Product';
 
-    /**
-     * Setter product
-     * @param {string} value
-     */
-	public set product(value: string) {
-		this._product = value;
-	}
+    apiGeneralSettingDto.product = mockProduct;
 
-    /**
-     * Setter globalContacts
-     * @param {ApiEmailContactDto[]} value
-     */
-	public set globalContacts(value: ApiEmailContactDto[]) {
-		this._globalContacts = value;
-	}
+    expect(apiGeneralSettingDto.product).toEqual(mockProduct);
+  });
 
-    /**
-     * Setter features
-     * @param {ApiFeatureDto[]} value
-     */
-	public set features(value: ApiFeatureDto[]) {
-		this._features = value;
-	}
+  it('should set and get globalContacts correctly', () => {
+    const mockGlobalContacts: ApiEmailContactDto[] = /* mock your ApiEmailContactDto[] value here */;
 
-    
-}
+    apiGeneralSettingDto.globalContacts = mockGlobalContacts;
+
+    expect(apiGeneralSettingDto.globalContacts).toEqual(mockGlobalContacts);
+  });
+
+  it('should set and get features correctly', () => {
+    const mockFeatures: ApiFeatureDto[] = /* mock your ApiFeatureDto[] value here */;
+
+    apiGeneralSettingDto.features = mockFeatures;
+
+    expect(apiGeneralSettingDto.features).toEqual(mockFeatures);
+  });
+
+  // Add more test cases as needed
+});
