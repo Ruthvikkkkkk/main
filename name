@@ -1,71 +1,54 @@
-export class ApiUserStoryNotes{
-     private _userStoryDescription: string;
-     private _specialRules: string;
-     private _testingRequirements: string;
-     private _acceptanceCriteria: string;
+import { ApiUserStoryNotes } from './api-user-story-notes';
 
-    /**
-     * Getter userStoryDescription
-     * @return {string}
-     */
-	public get userStoryDescription(): string {
-		return this._userStoryDescription;
-	}
+describe('ApiUserStoryNotes', () => {
+  let apiUserStoryNotes: ApiUserStoryNotes;
 
-    /**
-     * Getter specialRules
-     * @return {string}
-     */
-	public get specialRules(): string {
-		return this._specialRules;
-	}
+  beforeEach(() => {
+    apiUserStoryNotes = new ApiUserStoryNotes();
+  });
 
-    /**
-     * Getter testingRequirements
-     * @return {string}
-     */
-	public get testingRequirements(): string {
-		return this._testingRequirements;
-	}
+  it('should create an instance', () => {
+    expect(apiUserStoryNotes).toBeTruthy();
+  });
 
-    /**
-     * Getter acceptanceCriteria
-     * @return {string}
-     */
-	public get acceptanceCriteria(): string {
-		return this._acceptanceCriteria;
-	}
+  it('should have default values set', () => {
+    expect(apiUserStoryNotes.userStoryDescription).toBeUndefined();
+    expect(apiUserStoryNotes.specialRules).toBeUndefined();
+    expect(apiUserStoryNotes.testingRequirements).toBeUndefined();
+    expect(apiUserStoryNotes.acceptanceCriteria).toBeUndefined();
+  });
 
-    /**
-     * Setter userStoryDescription
-     * @param {string} value
-     */
-	public set userStoryDescription(value: string) {
-		this._userStoryDescription = value;
-	}
+  it('should set and get userStoryDescription correctly', () => {
+    const mockUserStoryDescription = 'Sample User Story Description';
 
-    /**
-     * Setter specialRules
-     * @param {string} value
-     */
-	public set specialRules(value: string) {
-		this._specialRules = value;
-	}
+    apiUserStoryNotes.userStoryDescription = mockUserStoryDescription;
 
-    /**
-     * Setter testingRequirements
-     * @param {string} value
-     */
-	public set testingRequirements(value: string) {
-		this._testingRequirements = value;
-	}
+    expect(apiUserStoryNotes.userStoryDescription).toEqual(mockUserStoryDescription);
+  });
 
-    /**
-     * Setter acceptanceCriteria
-     * @param {string} value
-     */
-	public set acceptanceCriteria(value: string) {
-		this._acceptanceCriteria = value;
-	}
+  it('should set and get specialRules correctly', () => {
+    const mockSpecialRules = 'Sample Special Rules';
 
-}
+    apiUserStoryNotes.specialRules = mockSpecialRules;
+
+    expect(apiUserStoryNotes.specialRules).toEqual(mockSpecialRules);
+  });
+
+  it('should set and get testingRequirements correctly', () => {
+    const mockTestingRequirements = 'Sample Testing Requirements';
+
+    apiUserStoryNotes.testingRequirements = mockTestingRequirements;
+
+    expect(apiUserStoryNotes.testingRequirements).toEqual(mockTestingRequirements);
+  });
+
+  it('should set and get acceptanceCriteria correctly', () => {
+    const mockAcceptanceCriteria = 'Sample Acceptance Criteria';
+
+    apiUserStoryNotes.acceptanceCriteria = mockAcceptanceCriteria;
+
+    expect(apiUserStoryNotes.acceptanceCriteria).toEqual(mockAcceptanceCriteria);
+  });
+
+  // Add more test cases as needed
+});
