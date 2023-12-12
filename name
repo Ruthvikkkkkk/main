@@ -1,54 +1,45 @@
-export class ApiUserStoryComment{
-   private _comment: string;
-   private _date: string; 
-   private _commentedBy: string;
+import { ApiUserStoryComment } from './api-user-story-comment';
 
-    /**
-     * Getter comment
-     * @return {string}
-     */
-	public get comment(): string {
-		return this._comment;
-	}
+describe('ApiUserStoryComment', () => {
+  let apiUserStoryComment: ApiUserStoryComment;
 
-    /**
-     * Getter date
-     * @return {string}
-     */
-	public get date(): string {
-		return this._date;
-	}
+  beforeEach(() => {
+    apiUserStoryComment = new ApiUserStoryComment();
+  });
 
-    /**
-     * Getter commentedBy
-     * @return {string}
-     */
-	public get commentedBy(): string {
-		return this._commentedBy;
-	}
+  it('should create an instance', () => {
+    expect(apiUserStoryComment).toBeTruthy();
+  });
 
-    /**
-     * Setter comment
-     * @param {string} value
-     */
-	public set comment(value: string) {
-		this._comment = value;
-	}
+  it('should have default values set', () => {
+    expect(apiUserStoryComment.comment).toBeUndefined();
+    expect(apiUserStoryComment.date).toBeUndefined();
+    expect(apiUserStoryComment.commentedBy).toBeUndefined();
+  });
 
-    /**
-     * Setter date
-     * @param {string} value
-     */
-	public set date(value: string) {
-		this._date = value;
-	}
+  it('should set and get comment correctly', () => {
+    const mockComment = 'Sample Comment';
 
-    /**
-     * Setter commentedBy
-     * @param {string} value
-     */
-	public set commentedBy(value: string) {
-		this._commentedBy = value;
-	}
+    apiUserStoryComment.comment = mockComment;
 
-}
+    expect(apiUserStoryComment.comment).toEqual(mockComment);
+  });
+
+  it('should set and get date correctly', () => {
+    const mockDate = 'Sample Date';
+
+    apiUserStoryComment.date = mockDate;
+
+    expect(apiUserStoryComment.date).toEqual(mockDate);
+  });
+
+  it('should set and get commentedBy correctly', () => {
+    const mockCommentedBy = 'Sample Commented By';
+
+    apiUserStoryComment.commentedBy = mockCommentedBy;
+
+    expect(apiUserStoryComment.commentedBy).toEqual(mockCommentedBy);
+  });
+
+  // Add more test cases as needed
+});
