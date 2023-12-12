@@ -1,54 +1,59 @@
-import { ApiStoryDto } from './api-story-dto';
+import { ApiEmailContactDto } from "./api-email-contact-dto";
+import { ApiFeatureDto } from "./api-feature-dto";
 
-describe('ApiStoryDto', () => {
-  let apiStoryDto: ApiStoryDto;
+export class ApiGeneralSettingDto {
+    private _product:string;
+    private _globalContacts:ApiEmailContactDto[];
+    private _features:ApiFeatureDto[];
 
-  beforeEach(() => {
-    apiStoryDto = new ApiStoryDto();
-  });
 
-  it('should create an instance', () => {
-    expect(apiStoryDto).toBeTruthy();
-  });
+    /**
+     * Getter product
+     * @return {string}
+     */
+	public get product(): string {
+		return this._product;
+	}
 
-  it('should have default values set', () => {
-    expect(apiStoryDto.storyUUID).toBeUndefined();
-    expect(apiStoryDto.storyName).toBeUndefined();
-    expect(apiStoryDto.state).toBeUndefined();
-    expect(apiStoryDto.supportText).toBeUndefined();
-  });
+    /**
+     * Getter globalContacts
+     * @return {ApiEmailContactDto[]}
+     */
+	public get globalContacts(): ApiEmailContactDto[] {
+		return this._globalContacts;
+	}
 
-  it('should set and get storyUUID correctly', () => {
-    const mockStoryUUID = 'SampleStoryUUID';
+    /**
+     * Getter features
+     * @return {ApiFeatureDto[]}
+     */
+	public get features(): ApiFeatureDto[] {
+		return this._features;
+	}
 
-    apiStoryDto.storyUUID = mockStoryUUID;
+    /**
+     * Setter product
+     * @param {string} value
+     */
+	public set product(value: string) {
+		this._product = value;
+	}
 
-    expect(apiStoryDto.storyUUID).toEqual(mockStoryUUID);
-  });
+    /**
+     * Setter globalContacts
+     * @param {ApiEmailContactDto[]} value
+     */
+	public set globalContacts(value: ApiEmailContactDto[]) {
+		this._globalContacts = value;
+	}
 
-  it('should set and get storyName correctly', () => {
-    const mockStoryName = 'Sample Story Name';
+    /**
+     * Setter features
+     * @param {ApiFeatureDto[]} value
+     */
+	public set features(value: ApiFeatureDto[]) {
+		this._features = value;
+	}
 
-    apiStoryDto.storyName = mockStoryName;
-
-    expect(apiStoryDto.storyName).toEqual(mockStoryName);
-  });
-
-  it('should set and get state correctly', () => {
-    const mockState = 'Sample State';
-
-    apiStoryDto.state = mockState;
-
-    expect(apiStoryDto.state).toEqual(mockState);
-  });
-
-  it('should set and get supportText correctly', () => {
-    const mockSupportText = 'Sample Support Text';
-
-    apiStoryDto.supportText = mockSupportText;
-
-    expect(apiStoryDto.supportText).toEqual(mockSupportText);
-  });
-
-  // Add more test cases as needed
-});
+    
+}
