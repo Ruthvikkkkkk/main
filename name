@@ -1,47 +1,359 @@
-import { ApiGeneralSettingDto } from './api-general-setting-dto';
-import { ApiEmailContactDto } from './api-email-contact-dto';
-import { ApiFeatureDto } from './api-feature-dto';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { Contact } from 'project/core/model/ui-contact-dto';
+import { CountryLevelPipelineService } from 'project/modules/country-specific-dashboard/services/pipeline/country-level-pipeline.service';
+import { GlobalDataService } from 'project/modules/dashboard/services/global/global-data-service';
+import { GeneralSettingDetails } from 'project/modules/process/model/common/general-setting-details-dto';
+import { UserContact } from 'project/modules/process/model/common/user-contact-dto';
+import { UserContactType } from 'project/modules/process/model/common/user-contact-type-dto';
+import { UIEmailContactDto } from 'project/modules/process/model/ui/ui-email-contact-dto';
+import { UIFeatureDto } from 'project/modules/process/model/ui/ui-feature-dto';
+import { UIGeneralSettingDto } from 'project/modules/process/model/ui/ui-general-setting-dto';
+import { UIGeneralSettingPayloadDto } from 'project/modules/process/model/ui/ui-general-setting-payload-dto';
+import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+import { ProcessConstants } from 'project/modules/process/service/util/process.constants';
+import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { ErrorMap } from 'project/shared/services/util/error-map.util';
+import { GenericConstants } from 'project/shared/services/util/generic-constants';
 
-describe('ApiGeneralSettingDto', () => {
-  let apiGeneralSettingDto: ApiGeneralSettingDto;
+@Component({
+  selector: 'feature-listing-container',
+  templateUrl: './feature-listing-container.component.html',
+})
+export class FeatureListingComponent implements OnInit {
 
-  beforeEach(() => {
-    apiGeneralSettingDto = new ApiGeneralSettingDto();
-  });
+  public generalSettingMap:Map<string,GeneralSettingDetails> = new Map();
+  public generalSettingDetails : GeneralSettingDetails;
+  public saveDisabled: boolean = false;
+  public groupLists: Array<{ title: string }> = [{ title: 'Payroll' }, { title: 'Time Solution' }, { title: 'Hr-Integration' }];
+  public selectedProductGroupInd = 0;
+  constructor(private processStorageService: ProcessStorageService, private countryPipelineService: CountryLevelPipelineService,
+    public globalData: GlobalDataService, private sharedService: SharedService, public processPipelineService: ProcessPipelineService,
+    public router: Router, private changeDetector: ChangeDetectorRef) {
+  }
 
-  it('should create an instance', () => {
-    expect(apiGeneralSettingDto).toBeTruthy();
-  });
+  ngOnInit(): void {
+    this.selectedProductGroupInd = this.processStorageService.currentIndex;
+    this.loadInitialDataForProduct();
+  }
 
-  it('should have default values set', () => {
-    expect(apiGeneralSettingDto.product).toBeUndefined();
-    expect(apiGeneralSettingDto.globalContacts).toBeUndefined();
-    expect(apiGeneralSettingDto.features).toBeUndefined();
-  });
+  private loadInitialDataForProduct(){
+    this.populateCurrentFeaturesAndGlobalContactsWithSelectedProduct();
+    if(this.generalSettingDetails.features && this.generalSettingDetails.features.length)
+    this.generalSettingDetails.features.forEach((feature: UIFeatureDto) => {
+      if (feature.$featureContacts) {
+        this.generalSettingDetails.checkBoxStatusMap.set(feature.$featureUUID + '_' + ProcessConstants.ADP, []);
+        this.generalSettingDetails.checkBoxStatusMap.set(feature.$featureUUID + '_' + ProcessConstants.Client, []);
+        feature.$featureContacts.forEach((featureContact: UIEmailContactDto) => {
+          if (featureContact.$contactType)
+            this.appendExisitingContactsToCheckBoxMap(featureContact, feature);
+        });
+      }
+    });
+    this.globalData.allAvailableClientsList = [];
+    this.countryPipelineService.getAvailableClientsList(this.processStorageService.activeNexoOid, 'CLIENT GV PROCESS PRACTITIONER', 'client').subscribe();
+    this.populateExistingGlobalContacts(this.processStorageService.globalContacts);
+    this.generalSettingMap.set(GenericConstants.groupLists[this.selectedProductGroupInd].title,this.generalSettingDetails);
+    this.changeDetector.detectChanges();
+  }
+  
 
-  it('should set and get product correctly', () => {
-    const mockProduct = 'Sample Product';
+  private populateExistingGlobalContacts(globalContacts: UIEmailContactDto[]): void {
+    let adpContacts: UserContact[] = [];
+    let clientContacts: UserContact[] = [];
+    globalContacts.forEach((contact: UIEmailContactDto) => {
+      let localContact: UserContact = new UserContact();
+      localContact.label = contact.$email;
+      localContact.value = contact.$email;
+      localContact.isNew = false;
+      if (contact.$contactType === ProcessConstants.ADP)
+        adpContacts.push(localContact);
+      if (contact.$contactType === ProcessConstants.Client)
+        clientContacts.push(localContact);
+    });
+    this.generalSettingDetails.selectedAdpUsers = adpContacts;
+    this.generalSettingDetails.selectedClientUsers = clientContacts;
+    this.generalSettingDetails.clientPartcipants = this.convertUserContactToContact(this.generalSettingDetails.selectedClientUsers);
+    this.generalSettingDetails.adpParticipants = this.convertUserContactToContact(this.generalSettingDetails.selectedAdpUsers);
+    let userContactType:UserContactType = new UserContactType();
+    userContactType.adp = this.generalSettingDetails.selectedAdpUsers;
+    userContactType.client = this.generalSettingDetails.selectedClientUsers;
+    this.processStorageService.allContacts.next(userContactType);
+  }
+  private verifyGlobalContactsInStatusMap(generalSettingDetails:GeneralSettingDetails): void {
+    let commonContacts: UserContact[] = [];
+    for (let [key, value] of generalSettingDetails.checkBoxStatusMap.entries()) {
+      let contacts:UserContact[] = [];
+      if (key.includes(ProcessConstants.ADP))
+        commonContacts = generalSettingDetails.selectedAdpUsers;
+      if (key.includes(ProcessConstants.Client))
+          commonContacts = generalSettingDetails.selectedClientUsers;
+          commonContacts.forEach((userContact: UserContact) => {
+            let index = value.findIndex((localContact:UserContact) => localContact.value === userContact.value);
+            if(index != -1)
+                contacts.push(value[index]);
+            else {
+              if(userContact.isNew)
+                contacts.push(userContact);
+            }
+          });
+     generalSettingDetails.checkBoxStatusMap.set(key, contacts);
+    }
+  }
+  private appendExisitingContactsToCheckBoxMap(featureContact: UIEmailContactDto, feature: UIFeatureDto):void {
+    let userContact: UserContact = new UserContact();
+    userContact.checked = true;
+    userContact.isNew = false;
+    userContact.label = featureContact.$email;
+    userContact.value = featureContact.$email;
+    let existingContacts = this.generalSettingDetails.checkBoxStatusMap.get(feature.$featureUUID + '_' + featureContact.$contactType);
+    if (existingContacts) {
+      existingContacts.push(userContact);
+      this.generalSettingDetails.checkBoxStatusMap.set(feature.$featureUUID + '_' + featureContact.$contactType, existingContacts);
+    }
+    else
+      this.generalSettingDetails.checkBoxStatusMap.set(feature.$featureUUID + '_' + featureContact.$contactType, [userContact]);
+  }
 
-    apiGeneralSettingDto.product = mockProduct;
+  public searchChange(event: any) :void{
+    this.countryPipelineService.getAdpusersList(event).subscribe();
+  }
+  public participantlistChange(event: any):void {  
+    this.forRemovedParticipants(event);
+    this.forAddedParticipants(event);
+    this.generalSettingDetails.clientPartcipants = this.convertUserContactToContact(this.generalSettingDetails.selectedClientUsers);
+    this.generalSettingDetails.adpParticipants = this.convertUserContactToContact(this.generalSettingDetails.selectedAdpUsers);
+    let userContactType:UserContactType = new UserContactType();
+    userContactType.adp = this.generalSettingDetails.selectedAdpUsers;
+    userContactType.client = this.generalSettingDetails.selectedClientUsers;
+    this.processStorageService.allContacts.next(userContactType);
+    this.verifyGlobalContactsInStatusMap(this.generalSettingDetails);
+    this.saveDisabled = true;
+    this.processStorageService.globalContacts = [];
+    this.generalSettingDetails.selectedAdpUsers.forEach((userContact: UserContact) => {
+      let uiEmailContactDto:UIEmailContactDto = new UIEmailContactDto();
+      uiEmailContactDto.$contactType = ProcessConstants.ADP;
+      uiEmailContactDto.$email = userContact.value;
+      this.processStorageService.globalContacts.push(uiEmailContactDto);
+    }); 
+    this.generalSettingDetails.selectedClientUsers.forEach((userContact: UserContact) => {
+      let uiEmailContactDto:UIEmailContactDto = new UIEmailContactDto();
+      uiEmailContactDto.$contactType = ProcessConstants.Client;
+      uiEmailContactDto.$email = userContact.value;
+      this.processStorageService.globalContacts.push(uiEmailContactDto);
+    });
+    this.generalSettingMap.set(GenericConstants.groupLists[this.selectedProductGroupInd].title,this.generalSettingDetails);
+  }
+  private forRemovedParticipants(event: any):void {
+    if(event.client)
+    {
+      let commonContacts:UserContact[]=[];
+      this.generalSettingDetails.selectedClientUsers.forEach((userContact:UserContact) => {
+      let index = event.client.findIndex((contact: { label: string; value: string; }) => contact.value === userContact.value);
+      if(index != -1){
+        userContact.isNew = false;
+        commonContacts.push(userContact);
+      }
+      });
+      this.generalSettingDetails.selectedClientUsers = commonContacts;
+    }
+    if(event.adp)
+    {
+      let commonContacts:UserContact[]=[];
+      this.generalSettingDetails.selectedAdpUsers.forEach((userContact:UserContact) => {
+      let index = event.adp.findIndex((contact: { label: string; value: string; }) => contact.value === userContact.value);
+      if(index != -1){
+        userContact.isNew = false;
+        commonContacts.push(userContact);
+      }
+      });
+      this.generalSettingDetails.selectedAdpUsers = commonContacts;
+    }
+  }
 
-    expect(apiGeneralSettingDto.product).toEqual(mockProduct);
-  });
+  private forAddedParticipants(event: any):void {
+    if (event.client) {
+      event.client.forEach((contact: { label: string; value: string; }) => {
+        let index = this.generalSettingDetails.selectedClientUsers.findIndex((userContact: UserContact) => userContact.value === contact.value);
+        if (index === -1) {
+          let localContact: UserContact = new UserContact();
+          localContact.label = contact.label;
+          localContact.value = contact.value;
+          localContact.isNew = true;
+          localContact.checked = true;
+          this.generalSettingDetails.selectedClientUsers.push(localContact);
+        }
+      });
+    }
+    if (event.adp) {
+      event.adp.forEach((contact: { label: string; value: string; }) => {
+        let index = this.generalSettingDetails.selectedAdpUsers.findIndex((userContact: UserContact) => userContact.value === contact.value);
+        if (index === -1) {
+          let localContact: UserContact = new UserContact();
+          localContact.label = contact.label;
+          localContact.value = contact.value;
+          localContact.isNew = true;
+          localContact.checked = true;
+          this.generalSettingDetails.selectedAdpUsers.push(localContact);
+        }
+      });
+    }
+  }
 
-  it('should set and get globalContacts correctly', () => {
-    const mockGlobalContacts: ApiEmailContactDto[] = /* mock your ApiEmailContactDto[] value here */;
+  public save(): void {
+    let generalSettingDtos:UIGeneralSettingPayloadDto = new UIGeneralSettingPayloadDto();
+    generalSettingDtos.$products = [];
+    for (let [key, value] of this.generalSettingMap.entries()) {
+      let generalSettingDto: UIGeneralSettingDto = this.prepareGeneralSettingPayLoad(key,value);
+      generalSettingDtos.$products.push(generalSettingDto);
+    }
+    this.processPipelineService.configureFeatures(generalSettingDtos).subscribe((res) => {
+      if(!(res instanceof ErrorMap)){
+        this.routeToCountryDashBoard();
+      }});
+  }
+  private prepareGeneralSettingPayLoad(domain:string,generalSettingDetails:GeneralSettingDetails) {
+    this.verifyGlobalContactsInStatusMap(generalSettingDetails);
+    let generalSettingDto: UIGeneralSettingDto = new UIGeneralSettingDto();
+    generalSettingDto.$countryCode = this.processStorageService.countryCode;
+    generalSettingDto.$productCode = this.processStorageService.productCode;
+    let globalContacts: UIEmailContactDto[] = this.prepareGlobalContacts(generalSettingDetails);
+    if (globalContacts.length){
+      generalSettingDto.$globalContacts = globalContacts;
+    }
+    let changedFeatures: UIFeatureDto[] = [];
+    generalSettingDetails.features.forEach((feature: UIFeatureDto) => {
+      let changedFeature: UIFeatureDto = new UIFeatureDto();
+      let featureContacts: UIEmailContactDto[] = this.prepareFeatureContacts(feature.$featureUUID,generalSettingDetails);
+      if (feature.$orginalState !== feature.$state || generalSettingDetails.modifiedFeatureUUIDs.includes(feature.$featureUUID)) {
+        if (feature.$toolTipState && feature.$toolTipState === 'Backlog')
+          changedFeature.$action = ProcessConstants.IN_ACTIVE;
+        else
+          changedFeature.$action = ProcessConstants.ACTIVE;
+        changedFeature.$featureUUID = feature.$featureUUID;
+        if (featureContacts.length)
+          changedFeature.$featureContacts = this.filterEmptyEmailDtos(featureContacts);
+        changedFeatures.push(changedFeature);
+      }
+    });
+    if (changedFeatures.length){
+      generalSettingDto.$features = changedFeatures;
+    }
+    generalSettingDto.$domain = domain;
+    return generalSettingDto;
+  }
 
-    apiGeneralSettingDto.globalContacts = mockGlobalContacts;
+  private filterEmptyEmailDtos(contacts: UIEmailContactDto[]): UIEmailContactDto[] {
+    let filteredContacts: UIEmailContactDto[] = [];
+    contacts.forEach((contact: UIEmailContactDto) => {
+      if ("email" in contact)
+        filteredContacts.push(contact);
+    });
+    return filteredContacts;
+  }
+  private prepareFeatureContacts(featureUUID: string,generalSettingDetails:GeneralSettingDetails): UIEmailContactDto[] {
+    let featureContacts: UIEmailContactDto[] = [];
+    let adpContacts = generalSettingDetails.checkBoxStatusMap.get(featureUUID + '_' + ProcessConstants.ADP);
+    if (adpContacts)
+      adpContacts.forEach((userContant: UserContact) => featureContacts.push(this.prepareEmailContact(userContant, ProcessConstants.ADP)));
+    let clientContacts = generalSettingDetails.checkBoxStatusMap.get(featureUUID + '_' + ProcessConstants.Client);
+    if (clientContacts)
+      clientContacts.forEach((userContant: UserContact) => featureContacts.push(this.prepareEmailContact(userContant, ProcessConstants.Client)));
+    return featureContacts;
+  }
+  private prepareEmailContact(userContant: UserContact , type: string): UIEmailContactDto {
+    let clientContact: UIEmailContactDto = new UIEmailContactDto();
+    if (userContant.checked) {
+      clientContact.$contactType = type;
+      clientContact.$email = userContant.value;
+    }
+    return clientContact;
+  }
 
-    expect(apiGeneralSettingDto.globalContacts).toEqual(mockGlobalContacts);
-  });
+  private prepareGlobalContact(userContant: UserContact , type: string): UIEmailContactDto {
+    let clientContact: UIEmailContactDto = new UIEmailContactDto();
+      clientContact.$contactType = type;
+      clientContact.$email = userContant.value;
+    return clientContact;
+  }
 
-  it('should set and get features correctly', () => {
-    const mockFeatures: ApiFeatureDto[] = /* mock your ApiFeatureDto[] value here */;
+  private prepareGlobalContacts(generalSettingDetails:GeneralSettingDetails): UIEmailContactDto[] {
+    let globalContacts: UIEmailContactDto[] = [];
+    if (generalSettingDetails.selectedAdpUsers) generalSettingDetails.selectedAdpUsers.forEach((contact: UserContact) => globalContacts.push(this.prepareGlobalContact(contact, ProcessConstants.ADP)));
+    if (generalSettingDetails.selectedClientUsers) generalSettingDetails.selectedClientUsers.forEach((contact: UserContact) => globalContacts.push(this.prepareGlobalContact(contact, ProcessConstants.Client)));
+    return globalContacts;
+  }
 
-    apiGeneralSettingDto.features = mockFeatures;
 
-    expect(apiGeneralSettingDto.features).toEqual(mockFeatures);
-  });
+  private routeToCountryDashBoard(): void {
+    let path = this.sharedService.breadcrumbList[1].href;
+    if (path)
+      this.router.navigate([path], { queryParamsHandling: 'preserve' });
+    this.changeDetector.detectChanges();
+  }
 
-  // Add more test cases as needed
-});
+  public onCancel(): void {
+    this.resetToOrginalState();
+    this.routeToCountryDashBoard();
+  }
+
+  private resetToOrginalState():void {
+    this.generalSettingDetails.features.forEach((feature: UIFeatureDto) => {
+      if (feature.$orginalState && feature.$orginalState !== feature.$state) {
+        feature.$state = feature.$orginalState;
+      }
+    });
+  }
+
+  private convertUserContactToContact(userContacts:UserContact[]):Contact[] {
+    let contacts:Contact[] = [];
+    userContacts.forEach((usercontact:UserContact) => {
+      let contact:Contact = new Contact();
+      contact.label = usercontact.label;
+      contact.value = usercontact.value;
+      contacts.push(contact);
+    });
+    return contacts;
+  }
+
+  public saveEnabled(event: any):void {
+    this.saveDisabled = event;
+  }
+
+  public onProductGroupSwitch(event:any):void {
+    this.generalSettingMap.set(GenericConstants.groupLists[this.selectedProductGroupInd].title,this.generalSettingDetails);
+    let currentStorageDetails = this.processStorageService.generalSettingResponse.get(GenericConstants.groupLists[this.selectedProductGroupInd].title) ;
+    if(currentStorageDetails){
+     currentStorageDetails.$globalContacts = this.processStorageService.globalContacts ;
+     this.processStorageService.generalSettingResponse.set(GenericConstants.groupLists[this.selectedProductGroupInd].title,currentStorageDetails) ;
+    }
+    this.selectedProductGroupInd = event.detail.value;
+    this.processStorageService.currentIndex = this.selectedProductGroupInd;
+    this.loadInitialDataForProduct();
+
+  }
+
+  private populateCurrentFeaturesAndGlobalContactsWithSelectedProduct(): void {
+    let currentProduct: string = GenericConstants.groupLists[this.selectedProductGroupInd].title;
+    let currentProductDetails = this.generalSettingMap.get(currentProduct);
+    if (currentProductDetails)
+      this.generalSettingDetails = currentProductDetails;
+    else{
+      this.generalSettingDetails = new GeneralSettingDetails();
+      this.generalSettingDetails.modifiedFeatureUUIDs = [];
+    }
+    
+    let uiGeneralSettingDto = this.processStorageService.generalSettingResponse.get(currentProduct);
+    if (uiGeneralSettingDto) {
+      this.processStorageService.features = uiGeneralSettingDto.$features;
+      this.processStorageService.globalContacts = uiGeneralSettingDto.$globalContacts;
+      this.generalSettingDetails.features = this.processStorageService.features;
+    } else {
+      this.processStorageService.features = [];
+      this.processStorageService.globalContacts = [];
+      this.generalSettingDetails.features = [];
+    }
+  }
+
+}
