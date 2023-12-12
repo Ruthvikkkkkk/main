@@ -1,33 +1,54 @@
-export class ApiStoryDto {
-    private _storyUUID: string;
-    private _storyName: string;
-    private _state: string;
-    private _supportText: string;
-    public get supportText(): string {
-        return this._supportText;
-    }
-    public set supportText(value: string) {
-        this._supportText = value;
-    }
+import { ApiStoryDto } from './api-story-dto';
 
-    public get storyUUID(): string {
-        return this._storyUUID
-    }
-    public set storyUUID(value: string) {
-        this._storyUUID = value;
-    }
+describe('ApiStoryDto', () => {
+  let apiStoryDto: ApiStoryDto;
 
-    public get storyName(): string {
-        return this._storyName;
-    }
-    public set storyName(value: string) {
-        this._storyName = value;
-    }
+  beforeEach(() => {
+    apiStoryDto = new ApiStoryDto();
+  });
 
-    public get state(): string {
-        return this._state;
-    }
-    public set state(value: string) {
-        this._state = value;
-    }
-}
+  it('should create an instance', () => {
+    expect(apiStoryDto).toBeTruthy();
+  });
+
+  it('should have default values set', () => {
+    expect(apiStoryDto.storyUUID).toBeUndefined();
+    expect(apiStoryDto.storyName).toBeUndefined();
+    expect(apiStoryDto.state).toBeUndefined();
+    expect(apiStoryDto.supportText).toBeUndefined();
+  });
+
+  it('should set and get storyUUID correctly', () => {
+    const mockStoryUUID = 'SampleStoryUUID';
+
+    apiStoryDto.storyUUID = mockStoryUUID;
+
+    expect(apiStoryDto.storyUUID).toEqual(mockStoryUUID);
+  });
+
+  it('should set and get storyName correctly', () => {
+    const mockStoryName = 'Sample Story Name';
+
+    apiStoryDto.storyName = mockStoryName;
+
+    expect(apiStoryDto.storyName).toEqual(mockStoryName);
+  });
+
+  it('should set and get state correctly', () => {
+    const mockState = 'Sample State';
+
+    apiStoryDto.state = mockState;
+
+    expect(apiStoryDto.state).toEqual(mockState);
+  });
+
+  it('should set and get supportText correctly', () => {
+    const mockSupportText = 'Sample Support Text';
+
+    apiStoryDto.supportText = mockSupportText;
+
+    expect(apiStoryDto.supportText).toEqual(mockSupportText);
+  });
+
+  // Add more test cases as needed
+});
