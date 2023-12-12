@@ -1,111 +1,71 @@
-import { UIUserStoryDetails } from "../ui/ui-user-story-details-dto";
-import { ApiEmailContactDto } from "./api-email-contact-dto";
-
-export class ApiFeatureDto {
-    private _action: string;
-    private _assignedInfo: string;
-    private _featureName: string;
-    private _featureUUID: string;
-    private _helpText: string;
-    private _isEditAllowed: string;
-    private _isFeatureInactiveAllowed: string;
-    private _isSendToClientVisible: string;
-    private _state: string;
-    private _featureContactList: ApiEmailContactDto[] | undefined;
-    private _orginalState?: string | undefined;
-    private _userStoryDetailsList?: UIUserStoryDetails[] | undefined;
-    private _toolTipState?: string | undefined;
-      
-
+export class ApiUserStoryNotes{
+     private _userStoryDescription: string;
+     private _specialRules: string;
+     private _testingRequirements: string;
+     private _acceptanceCriteria: string;
 
     /**
-     * Getter featureContactList
-     * @return {ApiEmailContactDto[] }
+     * Getter userStoryDescription
+     * @return {string}
      */
-	public get featureContactList(): ApiEmailContactDto[]|undefined  {
-		return this._featureContactList;
+	public get userStoryDescription(): string {
+		return this._userStoryDescription;
 	}
 
     /**
-     * Setter featureContactList
-     * @param {ApiEmailContactDto[] } value
+     * Getter specialRules
+     * @return {string}
      */
-	public set featureContactList(value: ApiEmailContactDto[]|undefined ) {
-		this._featureContactList = value;
+	public get specialRules(): string {
+		return this._specialRules;
 	}
 
+    /**
+     * Getter testingRequirements
+     * @return {string}
+     */
+	public get testingRequirements(): string {
+		return this._testingRequirements;
+	}
 
-    public get assignedInfo(): string {
-        return this._assignedInfo;
-    }
-    public set assignedInfo(value: string) {
-        this._assignedInfo = value;
-    }
-    public get featureName(): string {
-        return this._featureName;
-    }
-    public set featureName(value: string) {
-        this._featureName = value;
-    }
-    public get featureUUID(): string {
-        return this._featureUUID;
-    }
-    public set featureUUID(value: string) {
-        this._featureUUID = value;
-    }
-    public get helpText(): string {
-        return this._helpText;
-    }
-    public set helpText(value: string) {
-        this._helpText = value;
-    }
-    public get isEditAllowed(): string {
-        return this._isEditAllowed;
-    }
-    public set isEditAllowed(value: string) {
-        this._isEditAllowed = value;
-    }
-    public get isFeatureInactiveAllowed(): string {
-        return this._isFeatureInactiveAllowed;
-    }
-    public set isFeatureInactiveAllowed(value: string) {
-        this._isFeatureInactiveAllowed = value;
-    }
-    public get isSendToClientVisible(): string {
-        return this._isSendToClientVisible;
-    }
-    public set isSendToClientVisible(value: string) {
-        this._isSendToClientVisible = value;
-    }
-    public get state(): string {
-        return this._state;
-    }
-    public set state(value: string) {
-        this._state = value;
-    }
-  
-    public get orginalState(): string | undefined {
-        return this._orginalState;
-    }
-    public set orginalState(value: string | undefined) {
-        this._orginalState = value;
-    }
-    public get userStoryDetailsList(): UIUserStoryDetails[] | undefined {
-        return this._userStoryDetailsList;
-    }
-    public set userStoryDetailsList(value: UIUserStoryDetails[] | undefined) {
-        this._userStoryDetailsList = value;
-    }
-    public get toolTipState(): string | undefined {
-        return this._toolTipState;
-    }
-    public set toolTipState(value: string | undefined) {
-        this._toolTipState = value;
-    }
-    public get action(): string {
-        return this._action;
-    }
-    public set action(value: string) {
-        this._action = value;
-    }
+    /**
+     * Getter acceptanceCriteria
+     * @return {string}
+     */
+	public get acceptanceCriteria(): string {
+		return this._acceptanceCriteria;
+	}
+
+    /**
+     * Setter userStoryDescription
+     * @param {string} value
+     */
+	public set userStoryDescription(value: string) {
+		this._userStoryDescription = value;
+	}
+
+    /**
+     * Setter specialRules
+     * @param {string} value
+     */
+	public set specialRules(value: string) {
+		this._specialRules = value;
+	}
+
+    /**
+     * Setter testingRequirements
+     * @param {string} value
+     */
+	public set testingRequirements(value: string) {
+		this._testingRequirements = value;
+	}
+
+    /**
+     * Setter acceptanceCriteria
+     * @param {string} value
+     */
+	public set acceptanceCriteria(value: string) {
+		this._acceptanceCriteria = value;
+	}
+
 }
