@@ -37,9 +37,8 @@
                 <span class="text-md text-action-default w-full" tabindex="0">{{ card.description }}</span>
               </div>
               <div class="flex align-center justify-start md:justify-end w-48">
-                <sdf-button [emphasis]="card.buttonEmphasis" [variant]="card.buttonVariant"
-                            [autofocus]="card.autofocus" (click)="gotoRespectiveModule(card.thing)"
-                            class="whitespace-nowrap">{{ card.buttonText }}
+                <sdf-button [emphasis]="card.buttonEmphasis" [variant]="card.buttonVariant" [autofocus]="card.autofocus"
+                            (click)="gotoRespectiveModule(card.thing)" class="whitespace-nowrap">{{ card.buttonText }}
                 </sdf-button>
               </div>
             </div>
@@ -51,7 +50,6 @@
     </div>
 
     <div class="flex flex-col gap-y-4 w-full max-w-2/5">
-      <!-- Relevant Documents Section -->
       <div class="gap-y-6 w-full">
         <header>
           <div class="flex flex-col">
@@ -62,17 +60,47 @@
         </header>
       </div>
 
+      <!-- Single Document Card Section -->
       <sdf-card [spacing]="'loose'" [minimize]="true" class="w-full shadow-md border-0">
         <div class="grid grid-cols-1 w-full ">
+
           <div class="flex flex-col md:flex-row cursor-pointer w-full">
             <div class="flex align-center justify-start flex-col  cursor-pointer w-full">
+
               <span class="text-md font-bold text-action-primary" tabindex="0">{{ documentCard.title }}</span>
               <span class="text-md text-action-default">{{ documentCard.description }}</span>
+
             </div>
           </div>
         </div>
       </sdf-card>
-      <!-- End of Relevant Documents Section -->
+      <!-- End of Single Document Card Section -->
+
+      <!-- Topics Card Section -->
+      <sdf-card [spacing]="'loose'" [minimize]="true" class="shadow-md border-0">
+        <sdf-card-header tabindex="0" class="mb-6">{{ topicsCard.header }} ({{ topicsCard.topics.length }})</sdf-card-header>
+
+        <div class="flex flex-col gap-y-8 h-full">
+          <!-- Repeatable Topic Section -->
+          <ng-container *ngFor="let topic of topicsCard.topics">
+            <div class="flex flex-col md:flex-row cursor-pointer w-full gap-y-8">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">{{ topic.title }}</span>
+                <span class="text-md text-action-default w-full" tabindex="0">{{ topic.description }}</span>
+              </div>
+
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button [emphasis]="topic.buttonEmphasis" [variant]="topic.buttonVariant" [autofocus]="topic.autofocus"
+                            (click)="gotoRespectiveModule(topic.thing)" class="whitespace-nowrap">{{ topic.buttonText }}
+                </sdf-button>
+              </div>
+            </div>
+          </ng-container>
+          <!-- End of Repeatable Topic Section -->
+
+        </div>
+      </sdf-card>
+      <!-- End of Topics Card Section -->
 
     </div>
   </div>
