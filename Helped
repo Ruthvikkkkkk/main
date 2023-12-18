@@ -1,0 +1,79 @@
+<div class="flex flex-col gap-y-4 m-8">
+  <div class="flex flex-row">
+    <div class="min-w-4/5 justify-start">
+      <section data-cvs-id="2">
+        <app-breadcrumb slot="breadcrumbs" [ngClass]="{'font-bold': isBoldText}"></app-breadcrumb>
+        <sdf-page-header-layout page-title="Acme Inc" id="demo-component">
+          <span slot="supporting-content">To move forward with this implementation, complete your tasks and review
+            questionnaires, test catalogues, and other relevant documents</span>
+        </sdf-page-header-layout>
+      </section>
+    </div>
+    <div class="flex w-full justify-end">
+      <sdf-button emphasis="secondary">Manage Preferences</sdf-button>
+      <app-manage-preferences></app-manage-preferences>
+    </div>
+  </div>
+
+  <div class="flex flex-row gap-x-6">
+    <div class="w-full max-w-3/5">
+      <div class="w-full flex flex-col gap-y-4">
+        <div class="flex">
+          <header class="gap-y-6">
+            <div class="flex flex-col">
+              <span class="text-2xl" [ngClass]="{'font-bold': isBoldText}">Things to Do</span>
+              <span class="text-md text-action-default font-normal tracking-md">Here are the tasks you need to
+                complete</span>
+            </div>
+          </header>
+        </div>
+
+        <!-- Repeatable Card Section -->
+        <ng-container *ngFor="let card of cards">
+          <sdf-card [spacing]="'loose'" [minimize]="true" class="shadow-md border-0">
+            <div class="flex flex-col md:flex-row cursor-pointer w-full">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">{{ card.title }}</span>
+                <span class="text-md text-action-default w-full" tabindex="0">{{ card.description }}</span>
+              </div>
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button [emphasis]="card.buttonEmphasis" [variant]="card.buttonVariant"
+                            [autofocus]="card.autofocus" (click)="gotoRespectiveModule(card.thing)"
+                            class="whitespace-nowrap">{{ card.buttonText }}
+                </sdf-button>
+              </div>
+            </div>
+          </sdf-card>
+        </ng-container>
+        <!-- End of Repeatable Card Section -->
+
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-y-4 w-full max-w-2/5">
+      <!-- Relevant Documents Section -->
+      <div class="gap-y-6 w-full">
+        <header>
+          <div class="flex flex-col">
+            <span class="text-2xl" [ngClass]="{'font-bold': isBoldText}">Relevant Documents</span>
+            <span class="text-md text-action-default font-normal tracking-md">Review questionnaires, test catalogues and
+              other relevant documents</span>
+          </div>
+        </header>
+      </div>
+
+      <sdf-card [spacing]="'loose'" [minimize]="true" class="w-full shadow-md border-0">
+        <div class="grid grid-cols-1 w-full ">
+          <div class="flex flex-col md:flex-row cursor-pointer w-full">
+            <div class="flex align-center justify-start flex-col  cursor-pointer w-full">
+              <span class="text-md font-bold text-action-primary" tabindex="0">{{ documentCard.title }}</span>
+              <span class="text-md text-action-default">{{ documentCard.description }}</span>
+            </div>
+          </div>
+        </div>
+      </sdf-card>
+      <!-- End of Relevant Documents Section -->
+
+    </div>
+  </div>
+</div>
