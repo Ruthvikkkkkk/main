@@ -1,0 +1,149 @@
+<div class="flex flex-col gap-y-4 m-8">
+  <div class="flex flex-row">
+    <div class="min-w-4/5 justify-start">
+      <section data-cvs-id="2">
+        <app-breadcrumb slot="breadcrumbs" xclass="font-bold"></app-breadcrumb>
+        <sdf-page-header-layout page-title="Acme Inc" id="demo-component">
+          <span slot="supporting-content">To move forwared with this implementation, complete your tasks and review
+            questionnaries, test catalogues, and other relevant documents</span>
+        </sdf-page-header-layout>
+      </section>
+    </div>
+    <div class="flex w-full justify-end">
+      <sdf-button emphasis="secondary"> Manage Preferences</sdf-button>
+      <app-manage-preferences></app-manage-preferences>
+    </div>
+  </div>
+  <!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> -->
+  <div class="flex flex-row gap-x-6">
+    <div class="w-full max-w-3/5">
+      <div class="w-full flex flex-col gap-y-4">
+        <div class="flex">
+          <header class="gap-y-6">
+            <div class="flex flex-col">
+              <span class="text-2xl font-bold">Things to Do</span>
+              <span class="text-md text-action-default font-normal tracking-md">Here are the tasks you need to
+                complete</span>
+              <span class="text-md text-action-default font-normal tracking-md"></span>
+            </div>
+          </header>
+        </div>
+        <sdf-card [spacing]="'loose'" [minimize]="true" class="shadow-md border-0">
+          <div class="flex flex-col md:flex-row cursor-pointer w-full">
+            <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+              <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+              <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                requirements to the client.</span>
+            </div>
+
+            <div class="flex align-center justify-start md:justify-end w-48">
+              <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                class="whitespace-nowrap">generate
+              </sdf-button>
+            </div>
+          </div>
+        </sdf-card>
+        <sdf-card [spacing]="'loose'" [minimize]="true" class="shadow-md border-0">
+          <div class="flex flex-col md:flex-row cursor-pointer w-full">
+            <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+              <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+              <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                requirements to the client.</span>
+            </div>
+
+            <div class="flex align-center justify-start md:justify-end w-48">
+              <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                class="whitespace-nowrap">generate
+              </sdf-button>
+            </div>
+          </div>
+        </sdf-card>
+        <sdf-card [spacing]="'loose'" [minimize]="true" class="shadow-md border-0">
+          <sdf-card-header tabindex="0" class="mb-6">Topics(5)</sdf-card-header>
+
+          <div class="flex flex-col gap-y-8 h-full">
+            <div class="flex flex-col md:flex-row cursor-pointer w-full gap-y-8 ">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+                <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                  requirements to the client.</span>
+              </div>
+  
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                  class="whitespace-nowrap">generate
+                </sdf-button>
+              </div>
+            </div>
+            <div class="flex flex-col md:flex-row cursor-pointer w-full">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+                <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                  requirements to the client.</span>
+              </div>
+  
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                  class="whitespace-nowrap">generate
+                </sdf-button>
+              </div>
+            </div>
+            <div class="flex flex-col md:flex-row cursor-pointer w-full">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+                <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                  requirements to the client.</span>
+              </div>
+  
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                  class="whitespace-nowrap">generate
+                </sdf-button>
+              </div>
+            </div>
+            <div class="flex flex-col md:flex-row cursor-pointer w-full">
+              <div class="flex align-center justify-start flex-col cursor-pointer w-full">
+                <span tabindex="0" class="text-md font-bold text-default">Generate summary report</span>
+                <span class="text-md text-action-default w-full" tabindex="0">Send this capability's information
+                  requirements to the client.</span>
+              </div>
+  
+              <div class="flex align-center justify-start md:justify-end w-48">
+                <sdf-button emphasis="primary" variant="text" autofocus="false" (click)="gotoRespectiveModule(thing)"
+                  class="whitespace-nowrap">generate
+                </sdf-button>
+              </div>
+            </div>
+            
+          </div>
+        </sdf-card>
+      </div>
+
+    </div>
+    <div class="flex flex-col gap-y-4 w-full max-w-2/5">
+      <div class="gap-y-6 w-full">
+        <header>
+          <div class="flex flex-col">
+            <span class="text-2xl font-bold">Relevant Documents</span>
+            <span class="text-md text-action-default font-normal tracking-md">Review questionnaries, test catalouges and
+              other relevant documents</span>
+            <span class="text-md text-action-default font-normal tracking-md"></span>
+          </div>
+        </header>
+      </div>
+      <sdf-card [spacing]="'loose'" [minimize]="true" class="w-full shadow-md border-0" >
+        <div class="grid grid-cols-1 w-full ">
+
+          <div class="flex flex-col md:flex-row cursor-pointer w-full">
+            <div class="flex align-center justify-start flex-col  cursor-pointer w-full">
+
+              <span class="text-md font-bold text-action-primary" tabindex="0">Contactual Scope </span>
+              <span class="text-md text-action-default">View client, product, and contact information</span>
+
+            </div>
+          </div>
+        </div>
+      </sdf-card>
+    </div>
+  </div>
+</div>
