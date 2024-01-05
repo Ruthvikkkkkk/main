@@ -36,3 +36,102 @@
     </div>
 
 </sdf-focus-pane>
+
+import { Component, EventEmitter, OnInit, Output } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
+import { ApiUserStoryDetails } from "project/modules/process/model/api/api-user-story-details-dto";
+import { ActionDetails } from "project/modules/process/model/common/action-details-dto";
+import { UINewStoryPayloadDto } from "project/modules/process/model/ui/ui-new-story-payload-dto";
+import { ProcessPipelineService } from "project/modules/process/service/pipeline/process-pipeline.service";
+import { ProcessConstants } from "project/modules/process/service/util/process.constants";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+
+@Component({
+    selector: 'app-process-actions',
+    templateUrl: './process-actions.component.html'
+})
+export class ProcessActionsComponent implements OnInit {
+
+    public actionItems: ActionDetails[] = [];
+    public createStoryPopUp: boolean = false;
+    public createStoryLoader: boolean = false;
+    public storyDetails: UINewStoryPayloadDto;
+    public helpText: string;
+    public disableAcceptButton: boolean = true;
+    public isNameExists: boolean = false;
+    public isDescExists: boolean = true;
+    @Output() isCompleted: EventEmitter<boolean> = new EventEmitter();
+
+    constructor(public processPipeline: ProcessPipelineService, public activatedRoute: ActivatedRoute) { }
+    ngOnInit(): void {
+        this.isNameExists = false;
+        this.isDescExists=true;
+        this.actionItems.push(ProcessConstants.createAction);
+        this.storyDetails = new UINewStoryPayloadDto();
+    }
+
+    public onActionChanged(item: ActionDetails): void {
+        if(ProcessConstants.createAction.value === item.value){
+            this.createStoryPopUp = true;
+        }
+    }
+
+    public createNewStoryPopUpClose(): void {
+        this.resetValues();
+        this.isCompleted.emit(true);
+    }
+    private resetValues(): void {
+        this.createStoryPopUp = false;
+        this.storyDetails = new UINewStoryPayloadDto();
+        this.helpText = '';
+        this.isNameExists = false;
+        this.disableAcceptButton = true;
+        this.isDescExists=true;
+    }
+
+    public createNewStory(): void {
+        this.createStoryLoader = true;
+        this.storyDetails.$featureUUID = this.activatedRoute.snapshot.params['featureuuid'];
+        this.storyDetails.$clientId = this.activatedRoute.snapshot.params['clientId'];
+        this.processPipeline.createStory(this.storyDetails).subscribe((result: ApiUserStoryDetails | ErrorMap) => {
+            this.createStoryLoader = false;
+            if (result instanceof ErrorMap) {
+                if (result.error.error.errorCode === ProcessConstants.ErrorCode) {
+                    this.isNameExists = true;
+                }
+                else
+                    this.createNewStoryPopUpClose();
+            }
+            else
+                this.createNewStoryPopUpClose();
+        });
+
+    }
+
+
+    public newStoryDetails(event: any, detail: string): void {
+        switch (detail) {
+            case 'name':
+                this.storyDetails.$name = event.detail.trim();
+                break;
+            case 'description':
+                this.isDescExists=false;
+                this.storyDetails.$description = event.detail.trim();
+                this.charactersRemaining();
+                break;
+        }
+        this.disableAcceptButton = this.nameValidation();
+    }
+
+    public charactersRemaining(): void {
+        let noOfCharactersRemaining: number = ProcessConstants.charactersLimit - this.storyDetails.$description.length;
+        this.helpText = ProcessConstants.helpText + noOfCharactersRemaining + ProcessConstants.charactersRemaining;
+        if (noOfCharactersRemaining === 0) {
+            this.helpText = ProcessConstants.helpText + ProcessConstants.reachedLimt;
+        }
+    }
+
+    public nameValidation(): boolean {
+        return !(this.storyDetails.$name.length >= 3 && this.storyDetails.$description.length >= 1);
+    }
+}
