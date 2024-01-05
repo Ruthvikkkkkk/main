@@ -1,0 +1,38 @@
+<sdf-action-menu emphasis="secondary" [label]="'Actions'" *ngIf="actionItems.length">
+
+    <sdf-menu>
+        <sdf-menu-item [title]="item.label" *ngFor="let item of actionItems" (click)="onActionChanged(item)">
+            {{item.label}}</sdf-menu-item>
+    </sdf-menu>
+
+</sdf-action-menu>
+
+<sdf-focus-pane [visible]="createStoryPopUp" [heading]="'Create a new section'" closeable="true"
+    (sdfDismiss)="createNewStoryPopUpClose()" (sdfAccept)="createNewStory()" [disableAcceptButton]="disableAcceptButton"
+    [acceptLabel]="'Create'">
+    <div class=" px-4 flex flex-col gap-y-6">
+        <span>Please add the required details to create a new section</span>
+        <div class="flex flex-col gap-y-2">
+
+            <sdf-input tabindex="0" class="min-w-28 w-full max-w-xs" state='normal' label="Section Title"
+                [requiredState]="'required'" minlength="3" maxlength="35" (sdfInput)="newStoryDetails($event, 'name')"
+                [value]="storyDetails.$name"></sdf-input>
+            <span *ngIf="!isNameExists" class="text-sm">Min 3 characters</span>
+            <span *ngIf="isNameExists" class="text-sm text-action-destructive">Given section name already exists</span>
+
+        </div>
+
+        <div class="flex flex-col gap-y-2">
+            <sdf-textarea label="Description" resize="none" [requiredState]="'required'" [rows]="4" maxlength="2000"
+                (sdfInput)="newStoryDetails($event, 'description')" [value]="storyDetails.$description"></sdf-textarea>
+            <span *ngIf="isDescExists" class="text-sm">Max 2000 characters</span>
+            <span *ngIf="!isDescExists" class="text-sm">{{helpText}}</span>
+        </div>
+
+    </div>
+
+    <div class="h-full w-full flex items-center justify-center fixed top-0 left-0" *ngIf="createStoryLoader">
+        <sdf-busy-indicator size="xl"></sdf-busy-indicator>
+    </div>
+
+</sdf-focus-pane>
