@@ -1,8 +1,44 @@
-<form data-cvs-id="42" (submit)="login()"class="flex flex-col m-auto" >
-        <sdf-input label="Username" id="username"  name="username" [value]="username" (sdfinput)="usernameInput($event)" class=" w-72"
-             id="username"></sdf-input>
-        <sdf-input label="Password" name="Password" state="normal" (input)="passwordInput($event)"class="my-4 w-72" 
-          id="Password"></sdf-input>       
-        <sdf-button  emphasis="primary" (click)="login()"  >Login
-        </sdf-button>
-      </form>
+<h4>Apply Leave</h4>
+<div class="flex flex-col gap-y-4 max-h-24">
+    <div class="flex flex-row gap-x-4">
+        <div>
+            <sdf-select-simple required="true" class="min-w-24" label="Leave Transaction Type"  items="itemArray" (sdfChange)="onSelect($event)">
+                <sdf-select-option *ngFor="let item of leaveTransactionTypeArray" [value]="leaveTransactionTypeArray">{{item}}
+                </sdf-select-option>
+            </sdf-select-simple>
+        </div>
+        <div *ngIf="LeaveTransactionTypeSelected">
+            <sdf-select-simple required="true" class="min-w-24" label="Leave Type"  items="itemArray" (sdfChange)="onLeaveTypeSelection($event)">
+                <sdf-select-option *ngFor="let item of leaveTypeArray" [value]="leaveTypeArray">{{item}}
+                </sdf-select-option>
+            </sdf-select-simple>
+        </div>
+    </div>
+    
+    <div *ngIf="LeaveTypeSelected" class="flex flex-col gap-y-4 ">
+        <div class="flex flex-row gap-x-4">
+            <sdf-date-picker data-cvs-id="3" label="Start date" id="demo-component" style="width:350px"></sdf-date-picker>
+            <sdf-date-picker data-cvs-id="3" label="End date" id="demo-component" style="width:350px"></sdf-date-picker>
+        </div>
+        <div class="flex flex-row gap-x-4">
+            <sdf-textarea class="w-72 h-8"placeholder="comments" label="Additional comments" (input)="leaveRequest($event,'comments')"></sdf-textarea>
+        <sdf-textarea class="w-72 h-8"placeholder="Emergency Contact Details" label="Emergency Conatct" (input)="leaveRequest($event,'comments')"></sdf-textarea>
+
+        </div>
+    </div>
+    <div class="flex justify-end items-end">
+        <div class="flex flex-row gap-x-4 mb-4">
+            <sdf-button emphasis="primary" class="flex justify-end items-end"(click)=onSubmit()>Submit</sdf-button>
+            <sdf-button emphasis="secondary" class="flex justify-end items-end" (click)="onCancel()">Cancel</sdf-button>
+    
+        </div>
+    </div>
+    <sdf-floating-pane *ngIf="onsubmitTrue">
+        <sdf-box>
+            <legend>Do you want to submit?</legend>
+            <sdf-button>yes</sdf-button>
+            <sdf-button>no</sdf-button>
+        </sdf-box>
+    </sdf-floating-pane>
+    
+</div>
