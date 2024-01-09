@@ -2,43 +2,42 @@
 <div class="flex flex-col gap-y-4 max-h-24">
     <div class="flex flex-row gap-x-4">
         <div>
-            <sdf-select-simple required="true" class="min-w-24" label="Leave Transaction Type"  items="itemArray" (sdfChange)="onSelect($event)">
-                <sdf-select-option *ngFor="let item of leaveTransactionTypeArray" [value]="leaveTransactionTypeArray">{{item}}
-                </sdf-select-option>
-            </sdf-select-simple>
+            <label for="leaveTransactionType">Leave Transaction Type</label>
+            <select required class="min-w-24" id="leaveTransactionType" (change)="onSelect($event.target.value)">
+                <option *ngFor="let item of leaveTransactionTypeArray" [value]="item">{{ item }}</option>
+            </select>
         </div>
         <div *ngIf="LeaveTransactionTypeSelected">
-            <sdf-select-simple required="true" class="min-w-24" label="Leave Type"  items="itemArray" (sdfChange)="onLeaveTypeSelection($event)">
-                <sdf-select-option *ngFor="let item of leaveTypeArray" [value]="leaveTypeArray">{{item}}
-                </sdf-select-option>
-            </sdf-select-simple>
+            <label for="leaveType">Leave Type</label>
+            <select required class="min-w-24" id="leaveType" (change)="onLeaveTypeSelection($event.target.value)">
+                <option *ngFor="let item of leaveTypeArray" [value]="item">{{ item }}</option>
+            </select>
         </div>
     </div>
-    
+
     <div *ngIf="LeaveTypeSelected" class="flex flex-col gap-y-4 ">
         <div class="flex flex-row gap-x-4">
-            <sdf-date-picker data-cvs-id="3" label="Start date" id="demo-component" style="width:350px"></sdf-date-picker>
-            <sdf-date-picker data-cvs-id="3" label="End date" id="demo-component" style="width:350px"></sdf-date-picker>
+            <label for="startDate">Start date</label>
+            <input type="date" id="startDate" style="width: 350px">
+            <label for="endDate">End date</label>
+            <input type="date" id="endDate" style="width: 350px">
         </div>
         <div class="flex flex-row gap-x-4">
-            <sdf-textarea class="w-72 h-8"placeholder="comments" label="Additional comments" (input)="leaveRequest($event,'comments')"></sdf-textarea>
-        <sdf-textarea class="w-72 h-8"placeholder="Emergency Contact Details" label="Emergency Conatct" (input)="leaveRequest($event,'comments')"></sdf-textarea>
-
+            <textarea class="w-72 h-8" placeholder="comments" (input)="leaveRequest($event,'comments')"></textarea>
+            <textarea class="w-72 h-8" placeholder="Emergency Contact Details" (input)="leaveRequest($event,'comments')"></textarea>
         </div>
     </div>
     <div class="flex justify-end items-end">
         <div class="flex flex-row gap-x-4 mb-4">
-            <sdf-button emphasis="primary" class="flex justify-end items-end"(click)=onSubmit()>Submit</sdf-button>
-            <sdf-button emphasis="secondary" class="flex justify-end items-end" (click)="onCancel()">Cancel</sdf-button>
-    
+            <button type="button" class="flex justify-end items-end" (click)="onSubmit()">Submit</button>
+            <button type="button" class="flex justify-end items-end" (click)="onCancel()">Cancel</button>
         </div>
     </div>
-    <sdf-floating-pane *ngIf="onsubmitTrue">
-        <sdf-box>
+    <div *ngIf="onsubmitTrue">
+        <div>
             <legend>Do you want to submit?</legend>
-            <sdf-button>yes</sdf-button>
-            <sdf-button>no</sdf-button>
-        </sdf-box>
-    </sdf-floating-pane>
-    
+            <button>yes</button>
+            <button>no</button>
+        </div>
+    </div>
 </div>
