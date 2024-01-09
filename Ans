@@ -1,32 +1,120 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FeatureListingComponent } from './feature-listing-container.component';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { MetadataService } from 'path-to-metadata-service';  // Replace with the actual path to your metadata service
 
-describe('FeatureListingComponent', () => {
-  let component: FeatureListingComponent;
-  let fixture: ComponentFixture<FeatureListingComponent>;
+@Component({
+  selector: 'app-apply-leave',
+  templateUrl: './apply-leave.component.html',
+  styleUrls: ['./apply-leave.component.css']
+})
+export class ApplyLeaveComponent implements OnInit {
+  leaveTransactionTypeArray: string[] = [];
+  leaveTypeArray: string[] = '';
+  LeaveTransactionTypeSelected: string = '';
+  LeaveTypeSelected: string = '';
+  onsubmitTrue: boolean = false;
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [FeatureListingComponent],
+  startDate: string = '';
+  endDate: string = '';
+  comments: string = '';
+  emergencyContact: string = '';
+  isSubmitDisabled: boolean = true;
+
+  constructor(
+    private route: ActivatedRoute,
+    private metadataService: MetadataService  // Inject your metadata service
+  ) {}
+
+  ngOnInit(): void {
+    this.fetchMetadata();
+  }
+
+  fetchMetadata(): void {
+    this.metadataService.getMetadata().subscribe((metadata: any) => {
+      this.leaveTransactionTypeArray = metadata.leaveTransactionTypes;
+      this.leaveTypeArray = metadata.leaveTypes;
     });
+  }
 
-    fixture = TestBed.createComponent(FeatureListingComponent);
-    component = fixture.componentInstance;
-  });
+  onSelect(selectedValue: string): void {
+    this.LeaveTransactionTypeSelected = selectedValue;
+    this.checkSubmitButton();
+  }
 
-  it('should filter empty email dtos', () => {
-    const emptyEmailDto = { email: '' };
-    const validEmailDto = { email: 'test@example.com' };
-    const contacts = [
-      { $email: '', $contactType: 'ADP' },
-      { $email: 'test@example.com', $contactType: 'Client' },
-      emptyEmailDto, // Should be filtered out
-      validEmailDto, // Should be included
-    ];
+  onLeaveTypeSelection(selectedValue: string): void {
+    this.LeaveTypeSelected = selectedValue;
+    this.checkSubmitButton();
+  }
 
-    const filteredContacts = component['filterEmptyEmailDtos'](contacts);
+  onStartDateChange(): void {
+    this.checkSubmitButton();
+  }
 
-    expect(filteredContacts).toContain(validEmailDto);
-    expect(filteredContacts).not.toContain(emptyEmailDto);
-  });
-});
+  onEndDateChange(): void {
+    this.checkSubmitButton();
+  }
+
+  leaveRequest(event: any, field: string): void {
+    // Implement your logic for handling leave request data
+    this.checkSubmitButton();
+  }
+
+  onSubmit(): void {
+    // Implement your logic for submitting the leave request
+    this.onsubmitTrue = true;
+
+    // Store the submitted leave details in the local metadata service
+    const newLeaveRequest = {
+      fromDate: this.startDate,
+      toDate: this.endDate,
+      transactionType: 'custom',  // Add your logic for transaction type
+      leaveType: this.LeaveTypeSelected,
+      comments: this.comments,
+      emergencyContact: this.emergencyContact,
+      status: 'pending'  // Set the initial status
+    };
+
+    this.metadataService.addLeaveRequest(newLeaveRequest);
+  }
+
+  onCancel(): void {
+    // Implement your logic for canceling the leave request
+    this.onsubmitTrue = false;
+    // You may want to reset the form fields here
+    this.resetForm();
+    this.checkSubmitButton();
+  }
+
+  resetForm(): void {
+    this.LeaveTransactionTypeSelected = '';
+    this.LeaveTypeSelected = '';
+    this.startDate = '';
+    this.endDate = '';
+    this.comments = '';
+    this.emergencyContact = '';
+  }
+
+  checkSubmitButton(): void {
+    // Enable the submit button only when all fields are filled and valid
+    this.isSubmitDisabled = !(
+      this.LeaveTransactionTypeSelected &&
+      this.LeaveTypeSelected &&
+      this.startDate &&
+      this.endDate &&
+      this.comments &&
+      this.emergencyContact &&
+      this.isStartDateValid() &&
+      this.isEndDateValid()
+    );
+  }
+
+  isStartDateValid(): boolean {
+    // Check if the start date is not less than the current date
+    return new Date(this.startDate) >= new Date();
+  }
+
+  isEndDateValid(): boolean {
+    // Check if the end date is not less than the start date
+    return new Date(this.endDate) >= new Date(this.startDate);
+  }
+}
