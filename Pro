@@ -1,71 +1,8 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ProcessDocumentsComponent } from './process-documents.component';
-import { GridApi, GridReadyEvent } from 'ag-grid-community';
-import { of } from 'rxjs';
-
-describe('ProcessDocumentsComponent', () => {
-  let component: ProcessDocumentsComponent;
-  let fixture: ComponentFixture<ProcessDocumentsComponent>;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [ProcessDocumentsComponent],
-      // Add any necessary imports, providers, or mocks
-    });
-
-    fixture = TestBed.createComponent(ProcessDocumentsComponent);
-    component = fixture.componentInstance;
-
-    // You might need to set up some initial conditions or mock services here
-  });
-
-  it('should handle file upload in uploadFiles method', () => {
-    const testFiles = [new File(['file1.txt'], 'file1.txt')];
-    component.uploadFiles({ detail: testFiles });
-
-    expect(component.files).toEqual(testFiles);
-    expect(component.isUploaded).toBeFalse();
-  });
-
-  it('should disable submission in disableSubmit method', () => {
-    component.disableSubmit({});
-    expect(component.isUploaded).toBeTrue();
-  });
-
-  it('should update isUploaded based on documentChange method', () => {
-    // Assuming event.detail is an array for this test
-    component.documentChange({ detail: [1, 2, 3] });
-    expect(component.isUploaded).toBeFalse();
-
-    component.documentChange({ detail: [] });
-    expect(component.isUploaded).toBeTrue();
-  });
-
-  // Add more test cases as needed
-
-  it('should call uploadFile and update documents on onSubmitClick', () => {
-    // Mock the necessary services or use spies to verify method calls
-    const mockProcessPipelineService = jasmine.createSpyObj('ProcessPipelineService', ['uploadFile']);
-    mockProcessPipelineService.uploadFile.and.returnValue(of({ documentId: '123', body: {} }));
-
-    component.processPipeline = mockProcessPipelineService;
-    component.files = [new File(['file1.txt'], 'file1.txt')];
-    component.featureuuid = '123';
-    component.storuuuid = '456';
-
-    spyOn(component, 'saveDocument').and.callThrough();
-    spyOn(component, 'refreshLoadData').and.callThrough();
-
-    component.onSubmitClick();
-
-    expect(component.isUploaded).toBeTrue();
-    expect(mockProcessPipelineService.uploadFile).toHaveBeenCalledOnceWith(
-      component.files[0],
-      jasmine.any(String),
-      component.featureuuid,
-      component.storuuuid
-    );
-    expect(component.saveDocument).toHaveBeenCalledOnceWith(jasmine.any(Object));
-    expect(component.refreshLoadData).toHaveBeenCalledOnce();
-  });
-});
+<form data-cvs-id="42" (submit)="login()"class="flex flex-col m-auto" >
+        <sdf-input label="Username" id="username"  name="username" [value]="username" (sdfinput)="usernameInput($event)" class=" w-72"
+             id="username"></sdf-input>
+        <sdf-input label="Password" name="Password" state="normal" (input)="passwordInput($event)"class="my-4 w-72" 
+          id="Password"></sdf-input>       
+        <sdf-button  emphasis="primary" (click)="login()"  >Login
+        </sdf-button>
+      </form>
