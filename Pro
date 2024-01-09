@@ -3,13 +3,13 @@
   <div class="flex flex-row gap-x-4">
     <div>
       <label for="leaveTransactionType">Leave Transaction Type</label>
-      <select required class="min-w-24" id="leaveTransactionType" [(ngModel)]="LeaveTransactionTypeSelected">
+      <select required class="min-w-24" id="leaveTransactionType" [(ngModel)]="LeaveTransactionTypeSelected" (change)="onSelect($event)">
         <option *ngFor="let item of leaveTransactionTypeArray" [value]="item">{{ item }}</option>
       </select>
     </div>
     <div *ngIf="LeaveTransactionTypeSelected">
       <label for="leaveType">Leave Type</label>
-      <select required class="min-w-24" id="leaveType" [(ngModel)]="LeaveTypeSelected">
+      <select required class="min-w-24" id="leaveType" [(ngModel)]="LeaveTypeSelected" (change)="onLeaveTypeSelection($event)">
         <option *ngFor="let item of leaveTypeArray" [value]="item">{{ item }}</option>
       </select>
     </div>
@@ -18,19 +18,19 @@
   <div *ngIf="LeaveTypeSelected" class="flex flex-col gap-y-4 ">
     <div class="flex flex-row gap-x-4">
       <label for="startDate">Start date</label>
-      <input type="date" id="startDate" style="width: 350px" [(ngModel)]="startDate">
+      <input type="date" id="startDate" style="width: 350px" [(ngModel)]="startDate" (change)="onStartDateChange()">
       <label for="endDate">End date</label>
-      <input type="date" id="endDate" style="width: 350px" [(ngModel)]="endDate">
+      <input type="date" id="endDate" style="width: 350px" [(ngModel)]="endDate" (change)="onEndDateChange()">
     </div>
     <div class="flex flex-row gap-x-4">
-      <textarea class="w-72 h-8" placeholder="comments" [(ngModel)]="comments"></textarea>
-      <textarea class="w-72 h-8" placeholder="Emergency Contact Details" [(ngModel)]="emergencyContact"></textarea>
+      <textarea class="w-72 h-8" placeholder="comments" [(ngModel)]="comments" (input)="leaveRequest($event,'comments')"></textarea>
+      <textarea class="w-72 h-8" placeholder="Emergency Contact Details" [(ngModel)]="emergencyContact" (input)="leaveRequest($event,'emergencyContact')"></textarea>
     </div>
   </div>
-  
+
   <div class="flex justify-end items-end">
     <div class="flex flex-row gap-x-4 mb-4">
-      <button type="button" class="flex justify-end items-end" (click)="onSubmit()">Submit</button>
+      <button type="button" class="flex justify-end items-end" (click)="onSubmit()" [disabled]="isSubmitDisabled">Submit</button>
       <button type="button" class="flex justify-end items-end" (click)="onCancel()">Cancel</button>
     </div>
   </div>
