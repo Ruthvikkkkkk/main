@@ -1,120 +1,170 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { MetadataService } from 'path-to-metadata-service';  // Replace with the actual path to your metadata service
+import { Injectable } from "@angular/core";
 
-@Component({
-  selector: 'app-apply-leave',
-  templateUrl: './apply-leave.component.html',
-  styleUrls: ['./apply-leave.component.css']
+@Injectable({
+    providedIn:'root',
 })
-export class ApplyLeaveComponent implements OnInit {
-  leaveTransactionTypeArray: string[] = [];
-  leaveTypeArray: string[] = '';
-  LeaveTransactionTypeSelected: string = '';
-  LeaveTypeSelected: string = '';
-  onsubmitTrue: boolean = false;
+export class MetadataService{
+     private metadata:any = 
+    {
+        "employees": [
+          {
+            "id": 1,
+            "name": "John Doe",
+            "username": "emp1",
+            "password": "pass123",
+            "managerId": 5,
+            "role":"employee",
+            "leaves": [
+              {
+                "leaveId":"1",
+                "fromDate": "2024-02-01",
+                "toDate": "2024-02-05",
+                "transactionType": "full",
+                "leaveType": "cl",
+                "comments": "Vacation",
+                "emergencyContact": "123-456-7890",
+                "status": "approved"
+              },
+              {
+                "leaveId":"2",
+                "fromDate": "2024-03-10",
+                "toDate": "2024-03-15",
+                "transactionType": "half",
+                "leaveType": "pl",
+                "comments": "Family event",
+                "emergencyContact": "987-654-3210",
+                "status": "pending"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "name": "Jane Smith",
+            "username": "emp2",
+            "password": "pass456",
+            "managerId": 5,
+            "role":"employee",
+            "leaves": [
+              {
+                "leaveId":"3",
+                "fromDate": "2024-02-10",
+                "toDate": "2024-02-12",
+                "transactionType": "full",
+                "leaveType": "cl",
+                "comments": "Personal reasons",
+                "emergencyContact": "555-555-5555",
+                "status": "approved"
+              },
+              {
+                "leaveId":"4",
+                "fromDate": "2024-04-01",
+                "toDate": "2024-04-05",
+                "transactionType": "full",
+                "leaveType": "wellness",
+                "comments": "Medical leave",
+                "emergencyContact": "111-111-1111",
+                "status": "rejected"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "Alice Johnson",
+            "username": "emp3",
+            "password": "pass789",
+            "managerId": 6,
+            "role":"employee",
+            "leaves": [
+              {
+                "leaveId":"5",
+                "fromDate": "2024-03-20",
+                "toDate": "2024-03-25",
+                "transactionType": "half",
+                "leaveType": "pl",
+                "comments": "Travel plans",
+                "emergencyContact": "999-999-9999",
+                "status": "pending"
+              },
+              {
+                "leaveId":"6",
+                "fromDate": "2024-05-05",
+                "toDate": "2024-05-10",
+                "transactionType": "full",
+                "leaveType": "cl",
+                "comments": "Vacation",
+                "emergencyContact": "777-777-7777",
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "name": "Bob Wilson",
+            "username": "emp4",
+            "password": "pass012",
+            "managerId": 6,
+            "role":"employee",
+            "leaves": [
+              {
+                "leaveId":"7",
+                "fromDate": "2024-04-15",
+                "toDate": "2024-04-20",
+                "transactionType": "half",
+                "leaveType": "pl",
+                "comments": "Family function",
+                "emergencyContact": "456-789-0123",
+                "status": "approved"
+              },
+              {"leaveId":"8",
+                "fromDate": "2024-06-01",
+                "toDate": "2024-06-07",
+                "transactionType": "full",
+                "leaveType": "cl",
+                "comments": "Personal leave",
+                "emergencyContact": "987-654-3210",
+                "status": "pending"
+              }
+            ]
+          }
+        ],
+        "managers": [
+          {
+            "id": 5,
+            "role":"manager",
+            "name": "Manager 1",
+            "username": "mgr1",
+            "password": "mgrpass1",
+            "subordinates": [1, 2]
+          },
+          {
+            "id": 6,
+            "role":"manager",
+            "name": "Manager 2",
+            "username": "mgr2",
+            "password": "mgrpass2",
+            "subordinates": [3, 4]
+          }
+        ]
+      }
 
-  startDate: string = '';
-  endDate: string = '';
-  comments: string = '';
-  emergencyContact: string = '';
-  isSubmitDisabled: boolean = true;
-
-  constructor(
-    private route: ActivatedRoute,
-    private metadataService: MetadataService  // Inject your metadata service
-  ) {}
-
-  ngOnInit(): void {
-    this.fetchMetadata();
-  }
-
-  fetchMetadata(): void {
-    this.metadataService.getMetadata().subscribe((metadata: any) => {
-      this.leaveTransactionTypeArray = metadata.leaveTransactionTypes;
-      this.leaveTypeArray = metadata.leaveTypes;
-    });
-  }
-
-  onSelect(selectedValue: string): void {
-    this.LeaveTransactionTypeSelected = selectedValue;
-    this.checkSubmitButton();
-  }
-
-  onLeaveTypeSelection(selectedValue: string): void {
-    this.LeaveTypeSelected = selectedValue;
-    this.checkSubmitButton();
-  }
-
-  onStartDateChange(): void {
-    this.checkSubmitButton();
-  }
-
-  onEndDateChange(): void {
-    this.checkSubmitButton();
-  }
-
-  leaveRequest(event: any, field: string): void {
-    // Implement your logic for handling leave request data
-    this.checkSubmitButton();
-  }
-
-  onSubmit(): void {
-    // Implement your logic for submitting the leave request
-    this.onsubmitTrue = true;
-
-    // Store the submitted leave details in the local metadata service
-    const newLeaveRequest = {
-      fromDate: this.startDate,
-      toDate: this.endDate,
-      transactionType: 'custom',  // Add your logic for transaction type
-      leaveType: this.LeaveTypeSelected,
-      comments: this.comments,
-      emergencyContact: this.emergencyContact,
-      status: 'pending'  // Set the initial status
-    };
-
-    this.metadataService.addLeaveRequest(newLeaveRequest);
-  }
-
-  onCancel(): void {
-    // Implement your logic for canceling the leave request
-    this.onsubmitTrue = false;
-    // You may want to reset the form fields here
-    this.resetForm();
-    this.checkSubmitButton();
-  }
-
-  resetForm(): void {
-    this.LeaveTransactionTypeSelected = '';
-    this.LeaveTypeSelected = '';
-    this.startDate = '';
-    this.endDate = '';
-    this.comments = '';
-    this.emergencyContact = '';
-  }
-
-  checkSubmitButton(): void {
-    // Enable the submit button only when all fields are filled and valid
-    this.isSubmitDisabled = !(
-      this.LeaveTransactionTypeSelected &&
-      this.LeaveTypeSelected &&
-      this.startDate &&
-      this.endDate &&
-      this.comments &&
-      this.emergencyContact &&
-      this.isStartDateValid() &&
-      this.isEndDateValid()
-    );
-  }
-
-  isStartDateValid(): boolean {
-    // Check if the start date is not less than the current date
-    return new Date(this.startDate) >= new Date();
-  }
-
-  isEndDateValid(): boolean {
-    // Check if the end date is not less than the start date
-    return new Date(this.endDate) >= new Date(this.startDate);
-  }
+      getUsers(): any[]{
+        return [...this.metadata.employees, ...this.metadata.managers];
+      }
+      getMetadata():any[]{
+        return this.metadata.employees;
+      }
+      updateMetadata(updatedMetadata: any){
+        this.metadata={...this.metadata,...updatedMetadata};
+        console.log(this.metadata);
+      }
+      revokeLeave(employeeId:number,leaveFromDate:string,leaveToDate:string):void{
+        console.log(employeeId);
+        const employee = this.metadata.employees.find((emp:any)=>emp.id ===employeeId);
+        const leaveIndex = employee.leaves.findIndex(leave => leave.fromDate===leaveFromDate && leave.toDate===leaveToDate);
+        console.log(employee);
+            employee.leaves.splice(leaveIndex,1);
+        
+        console.log(this.metadata.employees.leaves);
+      }
+      
 }
