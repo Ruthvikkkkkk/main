@@ -1,0 +1,393 @@
+import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
+import { Contact } from 'project/core/model/ui-contact-dto';
+import { UIStoryDto } from 'project/modules/process/model/ui/ui-story-dto';
+import { UiToastDTO } from 'project/core/model/ui-toast-dto';
+import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+import { Utils } from 'project/modules/client/generic/utills/generic-utils';
+import { CountryLevelPipelineService } from 'project/modules/country-specific-dashboard/services/pipeline/country-level-pipeline.service';
+import { DashBoardConstants } from 'project/modules/dashboard/generic/dasboard.constants';
+import { BPQDashBoardApiDTO } from 'project/modules/dashboard/model/api/bpq.dashboard.api.dto';
+import { ThingsToDo } from 'project/modules/dashboard/model/ui/common-things-to-do-dto';
+import { OnboardingStatusDTO } from 'project/modules/dashboard/model/ui/onboardingStatus-dto';
+import { ProductGroupDTO } from 'project/modules/dashboard/model/ui/product-group.dto';
+import { RelevantDocsDTO } from 'project/modules/dashboard/model/ui/relevant-docs-dto';
+import { GlobalDataService } from 'project/modules/dashboard/services/global/global-data-service';
+import { DashBoardWorkerService } from 'project/modules/dashboard/services/worker/dashboard-worker.service';
+import { StateDetails } from 'project/modules/process/model/common/state-dto';
+import { UIFeatureDto } from 'project/modules/process/model/ui/ui-feature-dto';
+import { UIGeneralSettingDto } from 'project/modules/process/model/ui/ui-general-setting-dto';
+import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+import { ProcessConstants } from 'project/modules/process/service/util/process.constants';
+import { I18nServiceService } from 'project/shared/services/i18n-service.service';
+import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { GenericConstants } from 'project/shared/services/util/generic-constants';
+import { StorageService } from 'project/shared/services/util/storage.service';
+
+@Component({
+  selector: 'app-country-level-dashboard',
+  templateUrl: './country-level-dashboard.component.html',
+  styleUrls: []
+})
+export class CountryLevelDashboardComponent implements OnInit {
+
+  public tittle: string = '';
+  private groupLists: Array<{ title: string, id: string }> = [{ title: 'country-level.payroll', id: 'payroll' }, { title: 'country-level.time-solution', id: 'time' }, { title: 'country-level.hr-integration', id: 'hr' }];
+  public userStories:UIStoryDto[];
+  public country: boolean = true;
+  public productGroups: ProductGroupDTO[] = [];
+  public selectedProductGroupInd: number;
+  public activeClientId: number;
+  public countryCode: string = '';
+  public feature: UIFeatureDto;
+  public userstories:UIStoryDto;
+  public featureState: StateDetails;
+  public productStatusGroup: Map<string, OnboardingStatusDTO[]> = new Map();
+  public thingsToDo: ThingsToDo[] = [];
+  public relevantDocsList: ThingsToDo[] = [];
+
+  public productsList = new Map<number, string>([
+    [0 , "Payroll"],[1 , "Time Solution"], [2, "HR Integration"]
+  ]);
+
+  public localMap = new Map<string, ThingsToDo[]>();
+  public filteredthingsToDo: ThingsToDo[] = [];
+  public completedThingsTodoMsg: string = "We’re currently setting up your system and will notify you (through email) as soon as we are done."
+
+  public isPopupSuccess: boolean;
+
+  public supportText: string = '';
+
+  private contactTypeTextCollByPersona: Map<string, string[]> = new Map(
+    [
+      [
+        GenericConstants.ADP_PERSONA, ['ADP REQUIREMENTS PRACTITIONER', 'CLIENT REQUIREMENTS PRACTITIONER']
+      ],
+      [
+        GenericConstants.CLIENT_PERSONA, []
+      ],
+      [
+        GenericConstants.PARTNER_PERSONA, ['PARTNER REQUIREMENTS PRACTITIONER', 'CLIENT REQUIREMENTS PRACTITIONER']
+      ]
+    ]
+  );
+
+
+  public isContentLoaded: boolean = false;
+  switchLanguageService: any;
+
+  constructor(
+        public activatedRoute: ActivatedRoute,public processPipeline: ProcessPipelineService,
+    public globalService: GlobalDataService,
+    public sharedService: SharedService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private countryPipelineService: CountryLevelPipelineService,public translate: TranslateService,
+    public i18nService: I18nServiceService,public processStorageService:ProcessStorageService) {
+      this.switchLanguageService = this.i18nService.localeEvent.subscribe(locale => {
+        this.translate.use(locale);
+      });
+      this.translate.setDefaultLang('en');
+      this.translate.use(this.i18nService.activeLanguage);
+
+  }
+
+  ngOnInit() {
+    this.isContentLoaded = false;
+    this.selectedProductGroupInd=this.processStorageService.currentIndex;
+    this.supportText = this.sharedService.persona === GenericConstants.CLIENT_PERSONA ? 'To move forward with your implementation, complete all tasks assigned to you.' : 'To move forward with this implementation, complete your tasks and review questionnaires, test catalogues, and other relevant documents.';
+
+    this.thingsToDo = [];
+    this.filteredthingsToDo = [];
+    this.activeClientId = this.activatedRoute.snapshot.params['clientId'];
+    this.countryCode = this.activatedRoute.snapshot.params['id'].toUpperCase();
+
+    let clientName = this.globalService.clientNameById.get(Number(this.activeClientId));
+    let countryName = Utils.countryNameByCode.get(this.countryCode);
+
+    this.tittle = clientName + ', ' + countryName;
+    this.prepareThingsTodoList(countryName, this.activeClientId);
+    this.prepareProductGroups();
+    this.sharedService.isPopupSuccess.subscribe((res: boolean) => {
+      // this.globalService.thingsToDo = [];
+      // this.globalService.relevantDocsDTO = [];
+      // this.prepareThingsTodoList(countryName,this.activeClientId);
+      this.isPopupSuccess = res;
+      this.cdr.detectChanges();
+    })
+
+    //this.getCountryClientOverview();
+    if(this.processStorageService.features || !this.feature){
+      this.feature = this.processStorageService.getCurrentFeature(this.activatedRoute.snapshot.params['featureuuid']);
+  }
+  let stateDetails = this.processStorageService.processStateMap.get(this.feature.$state + '-' + this.sharedService.persona);
+  if (stateDetails)
+      this.featureState = stateDetails;
+    this.userStories = this.processStorageService.userStories;
+    this.userStories.forEach((s:UIStoryDto) => {
+      s.$storyCardCss = 'cursor-pointer';
+    });
+    this.processStorageService.storyStateStats();
+
+
+  }
+
+  prepareThingsTodoList(countryName: any, clientId: number) {
+    //this.dashboardWorkerService.getQuestonnairesByFdClientId(clientId).subscribe((res: BPQDashBoardApiDTO[]) => {
+
+    if (this.processStorageService.hasGVRole) {
+      this.addProcessPreferencesThingsToDo();
+    } else {
+    let res: BPQDashBoardApiDTO[] = this.globalService.questionnaireData;
+    let isClientPersona: boolean = this.sharedService.persona === GenericConstants.CLIENT_PERSONA ? true : false;
+    this.globalService.convertAndStoreThingsToDo(res, isClientPersona, true);
+    this.globalService.thingsToDo.forEach((thingsTodo: ThingsToDo) => {
+      if (thingsTodo.country === countryName || thingsTodo.isGlobal) {
+        if (!thingsTodo.state || thingsTodo.stateDescription !== DashBoardConstants.CLIENT_SIGNOFF_STATE_DESCRIPTION) {
+          this.thingsToDo.push(thingsTodo);
+          for (let [key, value] of GenericConstants.GOBAL_PRODUCT_TYPE_MAP) {
+            if (value.includes(thingsTodo.productCode)) {
+              if (!this.localMap.has(key)) {
+                this.localMap.set(key, [thingsTodo])
+              }
+              else if (this.localMap.has(key)) {
+                let temp = this.localMap.get(key);
+                temp?.push(thingsTodo);
+                this.localMap.set(key, temp!);
+              }
+            }
+          }
+        }
+      }
+    });
+    this.onProductGroupSwitch(undefined);
+    // this.addSetPreferencesInThingsToDo();
+    this.globalService.relevantDocsDTO.forEach((rel: ThingsToDo) => {
+      if (countryName === rel.country || rel.isGlobal) {
+        this.relevantDocsList.push(rel);
+      }
+    });
+  } 
+   
+    this.isContentLoaded = true;
+    this.cdr.detectChanges();
+    //})
+  }
+
+  public openRespectivePage(event: any): void {
+    if(event &&event.title &&  event.supportParamMap ){
+    this.sharedService.selectedQuestionnaire = event;
+    this.sharedService.selectedQuestionnaireTitle = event.title;
+    this.sharedService.selectedQuestionnaireId = event.supportParamMap.get('questionnaireId');
+    this.sharedService.selectedQuetionnaireKey = event.supportParamMap.get('questionnaireKey');
+    this.sharedService.questionnaireAccess = event.supportParamMap.get('supportText');
+    this.sharedService.clientId = event.supportParamMap.get('clientId');
+    let activeState: any = event.supportParamMap.get('state');
+    this.sharedService.activeQuestionnaireState = activeState;
+    }
+
+    if (this.sharedService.persona === GenericConstants.CLIENT_PERSONA) {
+      this.initiateNavigation(event);
+    } else if(this.processStorageService.hasGVRole){
+      this.initiateNavigation(event);
+    } else {
+      this.countryPipelineService.getConfiguredEmails(event).subscribe(() => {
+
+        this.sharedService.selectedQuestionnaireTitle = event.title;
+        this.sharedService.selectedQuestionnaireId = event.supportParamMap.get('questionnaireId');
+        this.sharedService.selectedQuetionnaireKey = event.supportParamMap.get('questionnaireKey');
+        this.sharedService.questionnaireAccess = event.supportParamMap.get('supportText');
+        this.sharedService.clientId = event.supportParamMap.get('clientId');
+        this.sharedService.isAdpFlow = event.supportParamMap.get('isAdpFlow')!;
+        // console.log(this.sharedService.isAdpFlow + "ldfsakjdlfsajdlfs");
+        let activeState: any = event.supportParamMap.get('state');
+
+
+        this.sharedService.activeQuestionnaireState = activeState;
+
+
+        let questionnaireNavigateReq: boolean = this.isParticipantsAvaialable();
+        if (!questionnaireNavigateReq) {
+          this.router.navigate(['preferences'], { relativeTo: this.activatedRoute });
+        } else {
+          this.initiateNavigation(event);
+        }
+
+      })
+    }
+
+  }
+
+  private isParticipantsAvaialable(): boolean {
+    let contactsByKey: Map<string, Contact[]> = this.getContactsArrByKey();
+    let questionnaireNavigateReq: boolean = true;
+    this.contactTypeTextCollByPersona.forEach((value: string[], key: string) => {
+      if (this.sharedService.persona === key) {
+        value.forEach((o: string) => {
+          let isPartcipantsNotExists: boolean = !contactsByKey.get(o) || contactsByKey.get(o)?.length == 0;
+          if (isPartcipantsNotExists) {
+            questionnaireNavigateReq = false;
+          }
+        });
+      }
+    });
+    return questionnaireNavigateReq;
+  }
+
+  private getContactsArrByKey(): Map<string, Contact[]> {
+
+    let contactsByKey: Map<string, Contact[]> = new Map();
+    contactsByKey.set('PARTNER REQUIREMENTS PRACTITIONER', this.globalService.partnerParticipantsList);
+    contactsByKey.set('ADP REQUIREMENTS PRACTITIONER', this.globalService.adpParticipantsList);
+    contactsByKey.set('CLIENT REQUIREMENTS PRACTITIONER', this.globalService.clientPartcipantsList);
+
+    return contactsByKey;
+
+  }
+
+  private initiateNavigation(event: ThingsToDo): void {
+    let routeParam: string | undefined = '';
+    if (event.navigateTo.includes('bpq')) {
+      routeParam = `${this.sharedService.selectedQuetionnaireKey}/${this.sharedService.selectedQuestionnaireId}`;
+
+    }
+    this.country = false;
+    let path: string = event.navigateTo + routeParam;
+    // this.router.navigate([path, { outlets: { primary: [] } }], { relativeTo: this.activatedRoute });
+    
+    this.sharedService.searchRequirement = '';
+    this.router.navigate([path], { relativeTo: this.activatedRoute });
+
+    this.cdr.detectChanges();
+  }
+
+  private prepareProductGroups(): void {
+    this.groupLists.forEach((element, index) => {
+
+      let productGroup: ProductGroupDTO = new ProductGroupDTO();
+      productGroup.groupTitle = element.title;
+      productGroup.id = element.id;
+      productGroup.value = index;
+
+      this.productGroups.push(productGroup);
+
+      let productStatus: OnboardingStatusDTO = new OnboardingStatusDTO();
+      productStatus.sectionTitle = 'Requirements Gathering';
+      productStatus.sectionStatus = element.id === 'payroll' ? 'Completed' : 'Not Started';
+
+      let productStatus1: OnboardingStatusDTO = new OnboardingStatusDTO();
+      productStatus1.sectionTitle = 'Configuration';
+      productStatus1.sectionStatus = element.id === 'payroll' ? 'In Progress' : 'Not Started';
+
+      let productStatus2: OnboardingStatusDTO = new OnboardingStatusDTO();
+      productStatus2.sectionTitle = 'Testing';
+      productStatus2.sectionStatus = 'Not Started';
+
+      let productStatus3: OnboardingStatusDTO = new OnboardingStatusDTO();
+      productStatus3.sectionTitle = 'Go-Live';
+      productStatus3.sectionStatus = 'Not Started';
+
+      this.productStatusGroup.set(element.id, [productStatus, productStatus1, productStatus2, productStatus3]);
+
+    });
+    //this.cdr.detectChanges();
+
+  }
+
+  public onProductGroupSwitch(event?: any): void {
+    this.selectedProductGroupInd = event ? event.detail.value : 0;
+    this.filteredthingsToDo = [];
+    this.relevantDocsList=[];
+  
+    if (this.processStorageService.hasGVRole) {
+      this.processStorageService.currentIndex=this.selectedProductGroupInd;
+      let selectedTitle: string = GenericConstants.groupLists[this.selectedProductGroupInd].title;
+      this.addProcessPreferencesThingsToDo();
+      this.filteredthingsToDo = this.localMap.get(selectedTitle!)!;
+    }else{
+      let selectedTitle = this.productsList.get(this.selectedProductGroupInd);
+      this.filteredthingsToDo = this.localMap.get(selectedTitle!)!;
+    }
+
+    this.cdr.detectChanges();
+  }
+
+
+  // private addSetPreferencesInThingsToDo(): void {
+  //   let preference: ThingsToDo = new ThingsToDo();
+  //   preference.title = 'Questionnaire Preferences';
+  //   preference.assignedOn = 'Manage questionnaire access and other settings.';
+  //   preference.status = 'Set preferences';
+  //   preference.navigateTo = 'preferences';
+  //   this.filteredthingsToDo?.push(preference);
+  // }
+
+  // private getCountryClientOverview(): void {
+  //   if (this.sharedService.persona === GenericConstants.ADP_PERSONA || this.sharedService.persona === GenericConstants.PARTNER_PERSONA) {
+  //     this.countryPipelineService.getCountryClientOverview(this.activeClientId + '').subscribe(() => {
+  //       this.countryPipelineService.getClientScope(this.activeClientId + '').subscribe();
+  //     });
+  //   }
+  // }
+
+  
+  private   addProcessPreferencesThingsToDo() {
+    let currentProduct: string = GenericConstants.groupLists[this.selectedProductGroupInd].title;
+    let products = this.processStorageService.generalSettingResponse.get(currentProduct);
+    let features = products?.$features;
+    this.processStorageService.features = features ? features : [];
+    if (features && features.length > 0 && this.sharedService.persona) {
+      let hasAnyActiveFeature = false;
+      features.forEach((feature: UIFeatureDto) => {
+          hasAnyActiveFeature = this.processEachFeature(feature, hasAnyActiveFeature);
+      });
+      if (!hasAnyActiveFeature) {
+        let preference: ThingsToDo = new ThingsToDo();
+        preference.title = ProcessConstants.CONFIGURE_SETTINGS;
+        preference.assignedOn = ProcessConstants.Help;
+        preference.status = 'Set up';
+        preference.navigateTo = 'process/product/'+this.processStorageService.productCode+'/general-settings';
+        this.filteredthingsToDo.push(preference);
+      }
+    } 
+    this.tittle = this.processStorageService.clientName + ', '+ Utils.countryNameByCode.get(this.processStorageService.countryCode);
+    this.localMap.set(currentProduct, this.filteredthingsToDo);
+ }
+
+ openGDDD(){
+  this.router.navigate(['process/product/'+this.processStorageService.productCode+'/gdd'], { relativeTo: this.activatedRoute });
+
+}
+
+
+ 
+  private processEachFeature(feature: UIFeatureDto, hasAnyActiveFeature: boolean):boolean {
+
+    this.userStories = this.processStorageService.userStories;
+    console.log("yisdcfdliavgiudgbvuWBV;",this.userStories,"dacyhsvakjvcfiakvuad",feature);
+    let stateDetails: StateDetails | undefined = this.processStorageService.processStateMap.get(feature.$state + '-' + this.sharedService.persona);
+    if (stateDetails && stateDetails.$stateDescription) {
+      let preference: ThingsToDo = new ThingsToDo();
+      preference.title = feature.$featureName;
+      preference.assignedOn = stateDetails.$supportText;
+      if (stateDetails.$apply && stateDetails.$apply['status'])
+        preference.status = stateDetails.$apply['status'];
+      preference.navigateTo = 'process/product/' + this.processStorageService.productCode + '/feature/' + feature.$featureUUID;
+      if (stateDetails.$state === ProcessConstants.FEATURE_ACTIVE || stateDetails.$state === ProcessConstants.FEATURE_INPROGRESS) {
+        hasAnyActiveFeature = true;
+        this.filteredthingsToDo.push(preference);
+      }
+      else if (ProcessConstants.FEATURE_COMPLETED === stateDetails.$state) {
+        hasAnyActiveFeature = true;
+        this.relevantDocsList.push(preference);
+      }
+    }
+    return hasAnyActiveFeature;
+  }
+
+ navigateToFeatures(){
+  this.router.navigate(['process/product/'+this.processStorageService.productCode+'/general-settings'], { relativeTo: this.activatedRoute });
+ }
+
+}
