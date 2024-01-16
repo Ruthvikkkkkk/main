@@ -1,0 +1,1069 @@
+story-details-container.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ApiUserStoryDetails } from 'project/modules/process/model/api/api-user-story-details-dto';
+import { StateDetails } from 'project/modules/process/model/common/state-dto';
+import { StoryAttributeDetails } from 'project/modules/process/model/common/story-attribute-details-dto';
+import { UIStoryRequestDTO } from 'project/modules/process/model/common/ui-story-request-dto';
+import { UIFeatureDto } from 'project/modules/process/model/ui/ui-feature-dto';
+import { UIStoryDto } from 'project/modules/process/model/ui/ui-story-dto';
+import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { ErrorMap } from 'project/shared/services/util/error-map.util';
+import { Observable } from 'rxjs';
+import { ProcessContainerBase } from '../process-container.base';
+
+@Component({
+    selector: 'story-details-container',
+    templateUrl: './story-details-container.component.html'
+})
+export class StoryDetailsContainerComponent  implements OnInit {
+
+    public currentFeature: UIFeatureDto;
+    public currentUserStory: UIStoryDto;
+    public userStories: UIStoryDto[];
+    public featureStateDetails: StateDetails;
+    public searchText: string;
+    public storyAttributes:StoryAttributeDetails;
+    constructor(public sharedService : SharedService, public processStorageService:ProcessStorageService,
+        public processPipeline:ProcessPipelineService,public activatedRoute: ActivatedRoute){
+    }
+
+    ngOnInit(): void {
+        if (this.processStorageService.features || !this.currentFeature) {
+          this.currentFeature = this.processStorageService.getCurrentFeature(this.activatedRoute.snapshot.params['featureuuid']);
+        }
+        if(this.processStorageService.userStories){
+          this.userStories = this.processStorageService.userStories;
+          this.currentUserStory = this.processStorageService.getCurrentStory(this.activatedRoute.snapshot.params['storyuuid']);
+        }
+
+        let stateDetails = this.processStorageService.processStateMap.get(this.currentFeature.$state + '-' + this.sharedService.persona);
+        if (stateDetails)
+            this.featureStateDetails = stateDetails;
+
+      this.prepareStoryAttributeDetails();
+    }
+
+    public saveUserStoryDetails(storyRequestDto:UIStoryRequestDTO, action:string):Observable<ApiUserStoryDetails|ErrorMap> {  
+            return this.processPipeline.saveUserStoryDetails(storyRequestDto,action);
+      }
+    
+      public prepareStoryRequestDto(featureuuid: string,storyuuid:string):UIStoryRequestDTO{
+        let uiStoryRequestDto = new UIStoryRequestDTO();
+        uiStoryRequestDto.featureuuid = featureuuid;
+        uiStoryRequestDto.storyuuid = storyuuid;
+        return uiStoryRequestDto;
+      }
+
+      public searchStoryNames(name:any):void {
+        this.searchText = name.detail;
+      }
+      
+      private prepareStoryAttributeDetails(){
+        this.storyAttributes = new StoryAttributeDetails();
+        this.storyAttributes.currentFeatureuuid = this.currentFeature.$featureUUID;
+        this.storyAttributes.enableAdd = true;
+        this.storyAttributes.storyLabels = ['Notes','Documents','Comments'];
+      }
+}
+
+story-details-container.component.html
+<adp-story-details *ngIf="sharedService.persona === 'adpPersona'">
+</adp-story-details>
+
+<client-story-details *ngIf="sharedService.persona === 'clientPersona'">
+</client-story-details>
+
+adp-story-details.component.ts
+import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ButtonDetails } from "project/modules/process/model/common/button-details-dto";
+import { StateDetails } from "project/modules/process/model/common/state-dto";
+import { UIStoryRequestDTO } from "project/modules/process/model/common/ui-story-request-dto";
+import { UIStoryDto } from "project/modules/process/model/ui/ui-story-dto";
+import { UIUserStoryComment } from "project/modules/process/model/ui/ui-user-story-comment-dto";
+import { UIUserStoryDetails } from "project/modules/process/model/ui/ui-user-story-details-dto";
+import { UIUserStoryNotes } from "project/modules/process/model/ui/ui-user-story-notes-dto";
+import { ProcessPipelineService } from "project/modules/process/service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "project/modules/process/service/util/process-storage.service";
+import { ProcessConstants } from "project/modules/process/service/util/process.constants";
+import { StoryDetailsConverter } from "project/modules/process/service/worker/converter/story-details-converter";
+import { SharedService } from "project/shared/services/shared-service/shared.service";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+import { StoryDetailsContainerComponent } from "../story-details-container.component";
+import { forkJoin } from 'rxjs';
+
+@Component({
+  selector: 'adp-story-details',
+  templateUrl: './adp-story-details.component.html'
+})
+export class AdpStoryDetailsComponent extends StoryDetailsContainerComponent implements OnInit, OnDestroy, AfterViewInit {
+
+  public inputValue: string;
+  public descEntered:boolean=true;
+  public orginalValue:string;
+  public action: string = 'Save_in_Cache';
+  public charactersLimited:number | string;
+  public displayHelpText: string |number;
+
+  public submitPopup = false;
+  public sendbackPopup = false;
+  public enableDescriptionEdit: boolean = false;
+  
+  
+
+  public storyDetails: UIUserStoryDetails;
+  public storyStateDetails: StateDetails;
+  public buttons: ButtonDetails[] = [];
+  public storyStateFilter:boolean = false;
+  public selectedStoryState:string[];
+  
+  @ViewChild('appendButtons') button: any;
+
+  @ViewChild('filterbutton') filterbutton: any;
+  @ViewChild('filterpane') filterpane: any;
+  public existingNotes: UIUserStoryNotes | null;
+
+  constructor(private router: Router, public processStorageService: ProcessStorageService,
+    public sharedService: SharedService, public processPipeline: ProcessPipelineService,
+    public activatedRoute: ActivatedRoute, private cdr: ChangeDetectorRef) {
+    super(sharedService, processStorageService, processPipeline,activatedRoute);
+  }
+
+ 
+
+  ngOnInit(): void {
+    super.ngOnInit();
+    // this.userStories = this.processStorageService.userStories;
+    // console.log(this.userStories);
+    // this.userStories.forEach((s:UIStoryDto) => {
+      
+    //   this.router.navigate(['story',s.$storyUUID], { relativeTo: this.activatedRoute });
+    //   console.log(s.$storyUUID);
+    //   s.$storyCardCss = 'cursor-pointer';
+    // });
+    this.setData();
+    this.processStorageService.storyStateStats();
+  }
+
+  ngAfterViewInit(): void {
+    this.prepareStoryStateButtons();
+  }
+  private setData(): void {
+    super.ngOnInit();
+    this.setStoryDetailsAndStoryMap();
+    this.highlightStorySelection(this.currentUserStory);
+  }
+
+
+
+
+  private setStoryDetailsAndStoryMap(): void {
+    if (this.processStorageService.userStoryDetails) {
+      this.storyDetails = StoryDetailsConverter.createNewUIStoryDetailsDtoFromExistingUIStoryDetailsDto(this.processStorageService.userStoryDetails);
+      let stateDetails = this.processStorageService.processStateMap.get(this.storyDetails.$state + '-' + this.sharedService.persona);
+      if (stateDetails)
+        this.storyStateDetails = stateDetails;
+    }
+    this.userStories = [...this.processStorageService.userStories];
+    this.selectedStoryState = [];
+    this.orginalValue = "";
+    this.storyAttributes.storyStateDetails = this.storyStateDetails;
+    this.storyAttributes.storyDetails = this.storyDetails;
+
+  }
+
+
+  private performStoryAction(action: string): void {
+    let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+    storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+    storyRequestDto.storyuuid = this.storyDetails.$storyuuid;
+    this.saveUserStoryDetails(storyRequestDto, action).subscribe((res) => {
+      if(!(res instanceof ErrorMap)){
+      this.processPipeline.loadUserStoryDetails(storyRequestDto).subscribe((response) => {
+        if(!(response instanceof ErrorMap)){
+        this.setStoryDetailsAndStoryMap();
+        this.prepareStoryStateButtons();
+        this.processStorageService.storyStateStats();
+        }
+      });
+    }
+    });
+  }
+  back(){
+
+  }
+
+  public closeStory() {
+    let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+    storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+    storyRequestDto.storyuuid = this.storyDetails.$storyuuid;
+    if(this.storyStateDetails.$isEditAllowed){
+      this.saveUserStoryDetails(storyRequestDto, ProcessConstants.SAVE_IN_CACHE).subscribe();
+    }
+    delete this.processStorageService.userStoryDetails;
+    this.router.navigateByUrl(this.router.url.substring(0, this.router.url.indexOf('/story/')));
+    this.cdr.detectChanges();
+  }
+
+  public modifiedDesc(event: any) : void{
+    this.descEntered=false;
+    this.inputValue = event.detail;
+    this.numberOfCharactersRemaining();
+  }
+
+  public onDescriptionAdd(): void {
+    if (this.storyDetails) {
+      this.orginalValue = this.storyDetails.$description;
+      if (this.processStorageService.userStoryDetails) {
+        this.processStorageService.userStoryDetails.$description = this.inputValue;
+        this.existingNotes = StoryDetailsConverter.checkUINotes(this.processStorageService.userStoryDetails.$notes);
+      }
+      this.saveStoryDetails(ProcessConstants.UPDATE_DESCRIPTION);
+      this.enableDescriptionEdit = false; 
+      this.displayHelpText ='';
+    }
+  }
+
+ 
+
+  public addComment(comment: UIUserStoryComment): void {
+    if (this.processStorageService.userStoryDetails) {
+      this.processStorageService.userStoryDetails.$commentsList = [comment];
+      this.existingNotes = StoryDetailsConverter.checkUINotes(this.processStorageService.userStoryDetails.$notes);
+    }
+    this.saveStoryDetails(ProcessConstants.ADD_COMMENT);
+  }
+
+  public sendToClient() {
+    if (this.processStorageService.userStoryDetails)
+      this.currentFeature.$userStoryDetailsList = [this.processStorageService.userStoryDetails];
+    this.processPipeline.sendtoclient(this.currentFeature).subscribe((res) => {
+      if (!(res instanceof ErrorMap)) {
+        let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+        if (this.currentFeature.$userStoryDetailsList && this.currentFeature.$userStoryDetailsList.length) {
+          storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+          storyRequestDto.storyuuid = this.currentFeature.$userStoryDetailsList[0].$storyuuid;
+          if(this.processStorageService.userStories)
+          this.processStorageService.userStories.length = 0;
+          let userStories =  this.processPipeline.loadUserStories(this.currentFeature.$featureUUID);
+          let userStory =  this.processPipeline.loadUserStoryDetails(storyRequestDto);
+          forkJoin([userStories, userStory]).subscribe(() => this.setData());
+        }
+      }
+    });
+  }
+
+
+  public saveStoryDetails(action: string) {
+    let userStoryInput = this.prepareStoryRequestDto(this.currentFeature.$featureUUID, this.currentUserStory.$storyUUID);
+    this.processPipeline.saveUserStoryDetails(userStoryInput, action).subscribe((res) =>{
+      if(res instanceof ErrorMap){
+        this.storyDetails.$description = this.orginalValue;
+      }else {
+        this.storyDetails = StoryDetailsConverter.covertApiStoryDetailsDtoToUIStoryDetailsDto(res,this.sharedService.persona,this.processStorageService.processStateMap);
+        this.processStorageService.userStoryDetails = StoryDetailsConverter.covertApiStoryDetailsDtoToUIStoryDetailsDto(res,this.sharedService.persona,this.processStorageService.processStateMap);
+        if(this.existingNotes){
+          this.storyDetails.$notes = this.existingNotes;
+          this.processStorageService.userStoryDetails.$notes = this.existingNotes;
+          this.existingNotes = null;
+        }
+        this.storyAttributes.storyDetails = this.processStorageService.userStoryDetails;
+      }
+    });
+  }
+
+
+  public highlightStorySelection(story: UIStoryDto) {
+    this.userStories.forEach((s: UIStoryDto) => {
+      s.$storyCardCss = 'cursor-pointer';
+    });
+    story.$storyCardCss = story.$storyCardCss + ' shadow-outline-focus';
+  }
+
+  public storyClicked(story: UIStoryDto) {
+    if (this.processStorageService.userStoryDetails) {
+      let storyRequestDto = this.prepareStoryRequestDto(this.currentFeature.$featureUUID, this.processStorageService.userStoryDetails.$storyuuid);
+      if(this.storyStateDetails.$isEditAllowed ){
+        this.saveUserStoryDetails(storyRequestDto, ProcessConstants.SAVE_IN_CACHE).subscribe(() => {
+          this.userStories = [...this.processStorageService.userStories];
+        });
+      }
+      this.router.navigateByUrl(this.router.url.replace(this.processStorageService.userStoryDetails.$storyuuid, story.$storyUUID)).then((res) => {
+        this.updateStoryDetails();
+        return res;
+      });
+    }
+  }
+
+  public prepareStoryStateButtons(): void {
+    let div = this.button.nativeElement;
+    let buttonArray: any[] = [];
+    if (this.storyStateDetails.$apply && this.storyStateDetails.$apply['buttons'])
+      this.storyStateDetails.$apply['buttons'].forEach((btn: any) => {
+        const button: any = document.createElement('sdf-button');
+        button.innerHTML = btn['name'];
+        button.emphasis = btn['emphasis'];
+        button.data = this[btn['functionName']].bind(this);
+        button.onclick = function (): any { return this.data.call(); };
+        buttonArray.push(button);
+      });
+    if (div)
+      div.replaceChildren(...buttonArray);
+  }
+
+  public disableEdit():boolean{
+    let result = true;
+    if(this.processStorageService.userStoryDetails){
+        let storyStateDetails: StateDetails | undefined = this.processStorageService.processStateMap.get(this.processStorageService.userStoryDetails.$state + "-" + this.sharedService.persona);
+        if (storyStateDetails)
+            result = !(storyStateDetails.$state.includes('APPROVED') || storyStateDetails.$state.includes('SIGNED_OFF')) ;
+    }
+    return result;
+
+  }
+
+  public openFilter(): void {
+    this.storyStateFilter = true;
+    this.filterpane.nativeElement.open(this.filterbutton);
+  }
+  public closeFilter(event:boolean):void {
+    this.storyStateFilter = event ;
+    this.filterpane.nativeElement.close();
+  }
+  public updateSelectedStoryState(event:string[]):void {
+    if(event)
+    this.selectedStoryState = [...event];
+  }
+
+  public closefiltertags(index:number){
+    this.selectedStoryState.splice(index,1);
+    this.selectedStoryState = [...this.selectedStoryState];
+  }
+
+  ngOnDestroy(): void {
+    delete this.processStorageService.userStoryDetails;
+  }
+
+  public numberOfCharactersRemaining(): void{
+    this.charactersLimited = ProcessConstants.charactersLimit-this.inputValue.length;
+    this.displayHelpText = ProcessConstants.helpText +this.charactersLimited + ProcessConstants.charactersRemaining;
+    if(this.charactersLimited == 0) {
+      this.displayHelpText =ProcessConstants.helpText + ProcessConstants.reachedLimt;
+    }
+    if(this.enableDescriptionEdit==false){  
+      this.displayHelpText ='';
+    }
+  }
+
+  public Closingfocus($event: boolean) {
+    this.enableDescriptionEdit = false
+    this.displayHelpText ='';
+
+  }
+
+
+  public actionCompleted(event: boolean): void {
+    if (event && this.processStorageService.userStoryDetails) {
+      this.router.navigateByUrl(this.router.url.replace(this.storyDetails.$storyuuid,this.processStorageService.userStoryDetails.$storyuuid)).then((res) => {
+        this.updateStoryDetails();
+        return res;
+      });
+    }
+  }
+
+  private updateStoryDetails():void{
+    this.setData();
+    this.prepareStoryStateButtons();
+  }
+
+  public sendbacktoclient(): void {
+    this.performStoryAction(ProcessConstants.SEND_BACK_TO_CLIENT);
+  }
+
+  public sendbacktoclientpopup(): void {
+    this.sendbackPopup = true;
+  }
+  public approve(): void {
+    this.performStoryAction(ProcessConstants.SEND_ADP_SIGN_OFF);
+  }
+  public sendStoryToClient():void {
+    this.performStoryAction(ProcessConstants.SEND_TO_CLIENT);
+  }
+
+  public reopenCompleted(event:boolean):void {
+    if(event){
+      this.setData();
+      this.prepareStoryStateButtons();
+    }
+  }
+
+}
+
+adp-story-details.component.html
+<div class="p-6">
+    <div>
+        <div>
+            <sdf-page-header-layout [supportingContent]="currentFeature.$helpText ? currentFeature.$helpText: ''"
+                [pageTitle]="currentFeature.$featureName ? currentFeature.$featureName: ''" class="my-4" >
+                
+                <app-breadcrumb slot="breadcrumbs" ></app-breadcrumb>
+               
+            </sdf-page-header-layout>
+        </div>
+        <div>
+            <sdf-box spacing="tight">
+                <div class="flex flex-col md:flex-row"  >
+                    <div class="w-full" *ngIf="processStorageService.userStories && processStorageService.userStories.length && processStorageService.stateCounts">
+                        <app-story-stats-bar></app-story-stats-bar>
+                    </div>
+                    <div class="flex items-start justify-start md:justify-end w-auto md:w-full  flex-col md:flex-row row-gap-1/2 md:gap-4">
+                        <div class="flex flex-row gap-x-4">
+                            <app-process-actions (isCompleted)="actionCompleted($event)"></app-process-actions>
+                            <sdf-button emphasis="primary" size="sm" class="block justify-end" [disabled]="featureStateDetails.$disableSendToClient" (click)="sendToClient()">Send to client</sdf-button>
+                        </div>
+                    </div>
+                </div>
+            </sdf-box>
+        </div>
+        <div class="card-height-stretch space-y-4 flex flex-col ">
+            <div class="space-y-4 space-x-4 flex items-center flex-wrap md:flex-no-wrap">
+                <sdf-input aria-label="input field for search partners" tabindex="0" [placeholder]="'Search'"
+                    (sdfInput)="searchStoryNames($event)" class=" w-full max-w-64 ml-1 mr-1 flex content-around gap-y-3"
+                    state='normal'>
+                    <sdf-icon icon="action-search" slot="after" aria-hidden="true" role="presentation" class="text-action-primary"></sdf-icon>
+                </sdf-input>
+                <div class="flex items-center flex-wrap md:flex-nowrap gap-2 mt-2">
+                    <div>
+                        <sdf-button #filterbutton emphasis="tertiary" icon="action-filter" (click)="openFilter()">Filters</sdf-button>
+                        <sdf-floating-pane #filterpane>
+                            <app-story-state-filter [stories]="userStories" [showFilter]="storyStateFilter"
+                                [selectedStoryState]="selectedStoryState" (selectedFilterState)="updateSelectedStoryState($event)"
+                                (closeFilter)="closeFilter($event)"></app-story-state-filter>
+                        </sdf-floating-pane>
+                    </div>
+                    <div class="flex items-center flex-wrap md:flex-nowrap gap-2">
+                        <sdf-tag *ngFor="let state of selectedStoryState let i = index" class=" whitespace-nowrap" [value]="state"
+                            (click)="closefiltertags(i)">
+                        </sdf-tag>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="grid grid-cols-1 lg:grid-cols-4  gap-2">
+                <div class="col-span-1">
+                    <div class="gap-4 max-h-4xl overflow-auto p-2">
+                        <div class="flex flex-col gap-y-4">
+                            <div *ngFor="let story of userStories| nameSearch: searchText | stateSearch : selectedStoryState">
+                                <app-story-card [story]="story" (clickedStory)="storyClicked($event)"></app-story-card>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-span-3">
+                    <div>
+                        <sdf-box class="min-h-4xl" *ngIf="storyDetails">
+                            <div class="flex flex-row">
+                                <span class="font-bold text-2xl min-w-1/2">{{storyDetails.$storyName}}</span>
+                                <div class="flex justify-end items-center w-full gap-2">
+                                    <app-process-duplicate *ngIf="storyStateDetails.$enableDuplicateSection" (isCompleted)="actionCompleted($event)"></app-process-duplicate>
+                                    
+                                </div>
+                            </div>
+                            <div class="flex flex-row my-4">
+                                <span class="text-md"><strong>Version: </strong> V{{storyDetails.$version}}.0</span>
+                            </div>
+                            
+                            <div class="flex my-6" *ngIf="storyDetails.$versionHistoryCount">
+                                <app-process-version ></app-process-version>
+                            </div>
+                            <div *ngIf="storyStateDetails.$isReopenVisible">
+                                <app-process-reopen  (isCompleted)="reopenCompleted($event)"></app-process-reopen>
+                            </div>
+                            <div class="flex flex-col justify-start text-lg leading-md my-4">
+                                <span class="font-bold ">Date Range</span>
+                                <span class="font-normal">{{"1-03-23"}}</span>
+                            </div>
+                            <div>
+                                <div class="flex flex-row items-center">
+                                    <div>
+                                        <span class="font-bold flex flex-col justify-start text-lg leading-md">Description</span>
+                                    </div>
+                    
+                                    <div class="flex justify-end w-full mr-4" *ngIf="disableEdit()">
+                                        <sdf-link class="cursor-pointer" tabindex="0" (click)="enableDescriptionEdit = true" icon="action-edit"><sdf-icon icon="action-edit"></sdf-icon>Edit</sdf-link>
+                                    </div>
+                                </div>
+                                <span class="font-normal flex flex-col justify-start text-lg leading-md my-4 break-words">{{storyDetails.$description}} </span>
+                            </div>
+                        <!-- appending buttons dynamically -->
+                                <div #appendButtons class="flex flex-col md:flex-row align-center justify-start gap-4 my-6">
+                                </div>
+                                <app-process-story-attributes [storyAttributes]="storyAttributes" (outputComment)="addComment($event)"></app-process-story-attributes>
+                        </sdf-box>
+                    
+                        <sdf-focus-pane *ngIf="enableDescriptionEdit" [visible]="enableDescriptionEdit" size="small" pane-type="floating" (sdfDismiss)="enableDescriptionEdit = false;this.displayHelpText ='';" hide-dismiss-button="true" [heading]="'Edit Description?'" dismiss-on-click-outside="true" hide-accept-button="" closeable ="true" spacing="normal">
+                            <sdf-box variant="text">
+                                <p>The current description can be modified upon clicking the "Save" button, it will begin reflecting on your screen</p>
+                            </sdf-box>
+                            <div class="mt-0">
+                                <sdf-box class="mt-0 px-0" variant="underlined">
+                                    <sdf-textarea rows="5" autofocus="false"  label="Description" (sdfInput)='modifiedDesc($event)' [value]='storyDetails.$description' maxlength="2000"></sdf-textarea>
+                                    <div class="p-2 font-light" *ngIf="descEntered">Max 2000 characters.</div>
+                                    <div class="p-2 font-light" *ngIf="!descEntered"> {{displayHelpText}} </div>
+                                </sdf-box>
+                            </div>
+                            <sdf-button slot="custom-buttons" id="cancel-button" (click)="enableDescriptionEdit = false; this.displayHelpText ='';">Cancel</sdf-button>
+                            <sdf-button slot="custom-buttons" id="save-button" emphasis="primary" (click)="onDescriptionAdd()">Save</sdf-button>
+                        </sdf-focus-pane>
+                    </div>
+                    
+                    
+                    <div *ngIf="sendbackPopup">
+                        <sdf-focus-pane visible="sendbackPopup" size="medium" pane-type="floating" closeable="true"
+                            heading="Send Back to Client?" dismiss-on-click-outside="true" hide-accept-button="true"
+                            hide-dismiss-button="true" (sdfDismiss)="this.sendbackPopup=false">
+                    
+                            <div class="conetent-container grid grid-cols-1 w-full p-6 pt-0 space-y-8">
+                                <span> </span>
+                            </div>
+                        
+                            <div slot="custom-buttons" autofocus="false"
+                                class="flex flex-column md:flex-row align-center justify-end gap-4">
+                                <sdf-button emphasis="secondary" autofocus="false" (click)="this.sendbackPopup=false">
+                                    Cancel</sdf-button>
+                                <sdf-button emphasis="primary" autofocus="false" (click)="sendbacktoclient();this.sendbackPopup=false">
+                                    Submit</sdf-button>
+                            </div>
+                        </sdf-focus-pane>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+story-container.component.ts
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { StateDetails } from 'project/modules/process/model/common/state-dto';
+import { UIFeatureDto } from 'project/modules/process/model/ui/ui-feature-dto';
+import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { ProcessContainerBase } from '../process-container.base';
+import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+import { UIStoryDto } from 'project/modules/process/model/ui/ui-story-dto';
+// import { Component, OnInit } from '@angular/core';
+// import { ActivatedRoute } from '@angular/router';
+import { ApiUserStoryDetails } from 'project/modules/process/model/api/api-user-story-details-dto';
+// import { StateDetails } from 'project/modules/process/model/common/state-dto';
+import { StoryAttributeDetails } from 'project/modules/process/model/common/story-attribute-details-dto';
+import { UIStoryRequestDTO } from 'project/modules/process/model/common/ui-story-request-dto';
+// import { UIFeatureDto } from 'project/modules/process/model/ui/ui-feature-dto';
+// import { UIStoryDto } from 'project/modules/process/model/ui/ui-story-dto';
+// import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+// import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+// import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { ErrorMap } from 'project/shared/services/util/error-map.util';
+import { Observable } from 'rxjs';
+@Component({
+    selector: 'story-container',
+    templateUrl: './story-container.component.html'
+})
+export class StoryContainerComponent  implements OnInit {
+
+    public feature: UIFeatureDto;
+    public featureState: StateDetails;
+    public searchText:string;
+    public currentUserStory:UIStoryDto;
+    public userStories:UIStoryDto[];
+    public storyAttributes:StoryAttributeDetails;
+    constructor(public sharedService:SharedService,
+        public processStorageService: ProcessStorageService,
+        public activatedRoute: ActivatedRoute,public processPipeline: ProcessPipelineService) {
+
+    }
+
+    ngOnInit(): void {
+        if(this.processStorageService.features || !this.feature){
+            this.feature = this.processStorageService.getCurrentFeature(this.activatedRoute.snapshot.params['featureuuid']);
+            
+           
+        }
+        // if(this.processStorageService.userStories){
+            // if(this.processStorageService.getCurrentStory(this.activatedRoute.snapshot.params['storyuuid'])){
+            //     this.currentUserStory = this.processStorageService.getCurrentStory(this.activatedRoute.snapshot.params['storyuuid']);
+            //     console.log(this.currentUserStory);}
+
+            // else{
+                // this.userStories = this.processStorageService.userStories;
+                // console.log(this.userStories[0].$storyUUID)
+            // }
+            
+        //   }
+        let stateDetails = this.processStorageService.processStateMap.get(this.feature.$state + '-' + this.sharedService.persona);
+        if (stateDetails)
+            this.featureState = stateDetails;
+    }
+    public searchStoryNames(name:any):void {
+        this.searchText = name.detail;
+      }
+      
+}
+
+story-container.component.html
+<div class="p-6">
+    <div>
+        <sdf-page-header-layout
+            [pageTitle]="feature.$featureName ? feature.$featureName: ''" class="my-4">
+            <app-breadcrumb slot="breadcrumbs"></app-breadcrumb>
+            <div slot="supporting-content">
+                <div style="color: #544E4A">{{feature.$helpText ? feature.$helpText: ''}}</div>                                
+            </div>
+        </sdf-page-header-layout>
+    </div>
+    <adp-story-container *ngIf="sharedService.persona === 'adpPersona'"></adp-story-container>
+    <client-story-container *ngIf="sharedService.persona === 'clientPersona'"></client-story-container>
+
+    
+</div>
+ adp-story-container.component.ts
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { UIStoryDto } from 'project/modules/process/model/ui/ui-story-dto';
+import { UIUserStoryDetails } from 'project/modules/process/model/ui/ui-user-story-details-dto';
+import { ProcessPipelineService } from 'project/modules/process/service/pipeline/process-pipeline.service';
+import { ProcessStorageService } from 'project/modules/process/service/util/process-storage.service';
+import { ProcessConstants } from 'project/modules/process/service/util/process.constants';
+import { SharedService } from 'project/shared/services/shared-service/shared.service';
+import { ErrorMap } from 'project/shared/services/util/error-map.util';
+import { StoryContainerComponent } from '../story-container.component';
+
+@Component({
+  selector: 'adp-story-container',
+  templateUrl: './adp-story-container.component.html'
+})
+export class AdpStoryContainerComponent extends StoryContainerComponent implements OnInit{
+    
+  public storyStateFilter:boolean = false
+  public selectedStoryState:string[];
+  public storyActionItems:Array<{ label: string, value: string }> =[]
+  @ViewChild('filterbutton') filterbutton: any;
+  @ViewChild('filterpane') filterpane: any;
+  constructor(public sharedService:SharedService, 
+              public processStorageService:ProcessStorageService,
+              private processPipelineService: ProcessPipelineService,
+              public activatedRoute: ActivatedRoute,
+              private router: Router,
+              private cdr: ChangeDetectorRef) {
+        super(sharedService, processStorageService, activatedRoute,processPipelineService);
+  }
+
+  ngOnInit(): void {
+    super.ngOnInit();
+    this.userStories = this.processStorageService.userStories;
+    this.userStories.forEach((s:UIStoryDto) => {
+      s.$storyCardCss = 'cursor-pointer';
+    });
+    this.processStorageService.storyStateStats();
+  }
+
+
+  sendToClient(){
+    let userStoryDetailsList: UIUserStoryDetails[] = [];
+    if(this.processStorageService.userStoryDetails){
+      userStoryDetailsList.push(this.processStorageService.userStoryDetails);
+    }
+    userStoryDetailsList.forEach((userStoryDetails: UIUserStoryDetails) => {
+      userStoryDetails.$documentsList.length = 0;
+      userStoryDetails.$orginaldocumentsList.length = 0;
+      userStoryDetails.$commentsList.length = 0;
+    });
+    this.feature.$userStoryDetailsList = userStoryDetailsList;
+    this.processPipelineService.sendtoclient(this.feature).subscribe(() => {
+      super.ngOnInit();
+    });
+  }
+
+  storyClicked(story: UIStoryDto)  {
+    this.router.navigate(['story',story.$storyUUID], { relativeTo: this.activatedRoute });
+    this.cdr.detectChanges();
+  }
+
+  public openFilter(): void {
+    this.storyStateFilter = true;
+    this.filterpane.nativeElement.open(this.filterbutton);
+  }
+  public closeFilter(event:boolean):void {
+    this.storyStateFilter = event ;
+    this.filterpane.nativeElement.close();
+  }
+  public updateSelectedStoryState(event:string[]):void {
+    if(event)
+    this.selectedStoryState = [...event];
+  }
+
+  public closefiltertags(index:number){
+    this.selectedStoryState.splice(index,1);
+    this.selectedStoryState = [...this.selectedStoryState];
+  }
+
+ 
+public actionCompleted(event:boolean):void {
+  if (event)
+    this.userStories = this.processStorageService.userStories;
+}
+
+}
+
+adp-story-container.component.html
+
+<div>
+    <sdf-box spacing="tight">
+        <div class="flex flex-col md:flex-row"  >
+            <div class="w-full" *ngIf="processStorageService.userStories && processStorageService.userStories.length && processStorageService.stateCounts">
+                <app-story-stats-bar></app-story-stats-bar>
+            </div>
+            <div class="flex items-start justify-start md:justify-end w-auto md:w-full  flex-col md:flex-row row-gap-1/2 md:gap-4">
+                <div class="flex flex-row gap-x-4">
+                    <app-process-actions (isCompleted)="actionCompleted($event)"></app-process-actions>
+                    <sdf-button emphasis="primary" size="sm" class="block justify-end" [disabled]="featureState.$disableSendToClient" (click)="sendToClient()">Send to client</sdf-button>
+                </div>
+            </div>
+        </div>
+    </sdf-box>
+</div>
+<div class="card-height-stretch space-y-4 flex flex-col ">
+    <div class="space-y-4 space-x-4 flex items-center flex-wrap md:flex-no-wrap">
+        <sdf-input aria-label="input field for search partners" tabindex="0" [placeholder]="'Search'"
+            (sdfInput)="searchStoryNames($event)" class=" w-full max-w-64 ml-1 mr-1 flex content-around gap-y-3"
+            state='normal'>
+            <sdf-icon icon="action-search" slot="after" aria-hidden="true" role="presentation" class="text-action-primary"></sdf-icon>
+        </sdf-input>
+        <div class="flex items-center flex-wrap md:flex-nowrap gap-2 mt-2">
+            <div>
+                <sdf-button #filterbutton emphasis="tertiary" icon="action-filter" (click)="openFilter()">Filters</sdf-button>
+                <sdf-floating-pane #filterpane>
+                    <app-story-state-filter [stories]="userStories" [showFilter]="storyStateFilter"
+                        [selectedStoryState]="selectedStoryState" (selectedFilterState)="updateSelectedStoryState($event)"
+                        (closeFilter)="closeFilter($event)"></app-story-state-filter>
+                </sdf-floating-pane>
+            </div>
+            <div class="flex items-center flex-wrap md:flex-nowrap gap-2">
+                <sdf-tag *ngFor="let state of selectedStoryState let i = index" class=" whitespace-nowrap" [value]="state"
+                    (click)="closefiltertags(i)">
+                </sdf-tag>
+            </div>
+        </div>
+    </div>
+  </div>
+  
+  <div class="gap-4 max-h-4xl overflow-auto p-2">
+      <div class="col-span-1">
+          <div  class="flex flex-col gap-y-4">
+              <div *ngFor="let story of userStories | nameSearch: searchText | stateSearch : selectedStoryState">
+                  <app-story-card [story]="story" (clickedStory)="storyClicked($event)"></app-story-card>
+              </div>
+          </div>
+      </div>
+  </div>
+
+
+
+process.routing.ts
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { FeatureListingComponent } from './component/container/general-settings-container/feature-listing-container.component';
+import { StoryContainerComponent } from './component/container/story-container/story-container.component';
+import { StoryDetailsContainerComponent } from './component/container/story-details-container/story-details-container.component';
+import { FeatureComponentResolver } from './resolvers/feature-component-resolver';
+import { StoryDetailsResolver } from './resolvers/story-details-resolver';
+import { StoryResolver } from './resolvers/story-resolver';
+import { GddThingsToDoContainer } from './component/GDD_ADP_PERSONA/gdd-things-to-do-container';
+
+const routes: Routes = [
+  { 
+     path:'product/:productCode',
+     children:[
+              { 
+                path: 'general-settings',
+                component: FeatureListingComponent,
+                resolve:{ RouteResolver: FeatureComponentResolver},
+                data: { breadCrumb: 'genral-settings-bread-crumb'}
+                  
+              },{
+                path:'gdd',
+                component: GddThingsToDoContainer
+              },{
+                path:'feature',
+                children:[
+                           { 
+                                path:':featureuuid',
+                                data: { breadCrumb: '@story-summary-bread-crumb@'},
+                                children:[
+                                  {
+                                  path:'',
+                                  component: StoryContainerComponent,
+                                  resolve:{ RouteResolver: StoryResolver}
+                                  },
+                                  {
+                                    path:'story/:storyuuid',
+                                    component : StoryDetailsContainerComponent,
+                                    resolve : {RouteResolver : StoryDetailsResolver},
+                                    data : {breadCrumb : '@story-detail-bread-crumb@'}
+                                  }
+                                ]
+                            }
+                        ]
+              }
+            ]
+  }
+];
+@NgModule({
+    imports: [RouterModule.forChild(routes)],
+    exports: [RouterModule],
+    providers: [],
+    declarations: [
+  
+    ]
+  })
+
+export class ProcessRoutingModule { }
+
+
+story-resolver.ts
+import { Injectable } from "@angular/core";
+import { ActivatedRouteSnapshot, Resolve, RouterStateSnapshot } from "@angular/router";
+import { ApiDTO } from "project/modules/client/model/api/client/api-dto";
+import { CountryScope } from "project/modules/client/model/api/country/countryScope";
+import { Product } from "project/modules/client/model/api/product/product";
+import { CountryLevelPipelineService } from "project/modules/country-specific-dashboard/services/pipeline/country-level-pipeline.service";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+import { Observable } from "rxjs";
+import { UIStoryRequestDTO } from "../model/common/ui-story-request-dto";
+import { UIFeatureRequestDTO } from "../model/ui/ui-feature-request-dto";
+import { ProcessPipelineService } from "../service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "../service/util/process-storage.service";
+
+
+@Injectable()
+export class StoryResolver implements Resolve<any> {
+
+    constructor(private countryPipeLineService:CountryLevelPipelineService, 
+        private processStorageService : ProcessStorageService,
+        private pipelineService: ProcessPipelineService){
+    }
+
+    resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+        return new  Observable((observer)=>{
+            this.loadData(route,state).subscribe((res:any)=>{
+                observer.next();
+                observer.complete();
+            });
+        })
+    }
+
+    private loadData(route: ActivatedRouteSnapshot,state: RouterStateSnapshot): Observable<any> {
+        return new Observable((observer:any)=>{
+            let urlPath:string[] = state.url.split('/');
+            let clientId: string = this.getUrlValues(urlPath,'clientId');
+            this.processStorageService.clientId = clientId;
+            let countryCode : string = this.getUrlValues(urlPath,'country');
+            let productCode : string = this.getUrlValues(urlPath,'product');
+            this.countryPipeLineService.getCountryClientOverview(clientId+'').subscribe((response:ApiDTO)=>{
+                response.client.countryList.forEach((country: CountryScope) => {
+                    if(country.countryCode.toLowerCase() === countryCode.toLowerCase()){
+                        this.processStorageService.countryCode = countryCode.toUpperCase();
+                        country.productList.forEach((product:Product) => {
+                            if(product['key'].toLowerCase() === productCode.toLowerCase()){
+                                this.processStorageService.productCode = productCode;
+                            }
+                        });
+                    }
+                });
+                let featureRequest = this.prepareFeatureRequestDto(this.processStorageService.countryCode, this.processStorageService.productCode);
+                this.pipelineService.loadFeatures(featureRequest).subscribe((res)=> {
+                    if(res instanceof ErrorMap)
+                    this.returnFailedResponse(observer,res);
+                else{
+                    if(route.params.featureuuid){
+                        this.pipelineService.loadUserStories(route.params.featureuuid).subscribe((userstories) => {
+                            if(userstories instanceof ErrorMap)
+                            this.returnFailedResponse(observer,userstories);
+                            else
+                            this.returnResponse(observer);
+                        });    
+                    }else{
+                        this.returnResponse(observer);
+                    }
+                }
+                });
+            })    
+        })    
+    }
+
+    private returnResponse(observer:any){
+        observer.next(true);
+        observer.complete();
+    }
+    
+    private returnFailedResponse(observer:any,res:ErrorMap){
+        observer.error(res);
+        observer.complete();
+    }
+    private getUrlValues(urlPath: string[],findValue:string) : string{
+        let index = urlPath.findIndex(value => value && findValue.toLowerCase().includes(value.toLowerCase()));
+        let value: string = urlPath[index + 1];
+        return value;
+    }
+
+    prepareStoryRequestDto(featureuuid: string,storyuuid:string):UIStoryRequestDTO{
+        let uiStoryRequestDto = new UIStoryRequestDTO();
+        uiStoryRequestDto.featureuuid = featureuuid;
+        uiStoryRequestDto.storyuuid = storyuuid;
+        return uiStoryRequestDto;
+     }
+ 
+     prepareFeatureRequestDto(countryCode: string, productCode: string):UIFeatureRequestDTO{
+         let featureRequestDto = new UIFeatureRequestDTO();
+         featureRequestDto.$countryCode = countryCode;
+         featureRequestDto.$productCode = productCode;
+         return featureRequestDto;
+     }
+
+}    
+
+story-details-resolver.ts
+import { Injectable } from "@angular/core";
+import { ActivatedRouteSnapshot, Resolve, RouterStateSnapshot } from "@angular/router";
+import { Observable, of } from "rxjs";
+import { UIFeatureRequestDTO } from "../model/ui/ui-feature-request-dto";
+import { ProcessPipelineService } from "../service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "../service/util/process-storage.service";
+import { UIStoryRequestDTO } from "../model/common/ui-story-request-dto";
+import { CountryLevelPipelineService } from "project/modules/country-specific-dashboard/services/pipeline/country-level-pipeline.service";
+import { CountryScope } from "project/modules/client/model/api/country/countryScope";
+import { ApiDTO } from "project/modules/client/model/api/client/api-dto";
+import { Product } from "project/modules/client/model/api/product/product";
+import { UIFeatureDto } from "../model/ui/ui-feature-dto";
+import { SharedService } from "project/shared/services/shared-service/shared.service";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+import { UIGeneralSettingDto } from "../model/ui/ui-general-setting-dto";
+
+@Injectable()
+export class StoryDetailsResolver implements Resolve<any> {
+    
+    private featureUUID:string;
+    constructor(private countryPipeLineService:CountryLevelPipelineService,
+                private pipelineService: ProcessPipelineService,
+                private processStorageService : ProcessStorageService,
+                private sharedService:SharedService) {
+
+    }
+    resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+        return new  Observable((observer)=>{
+            this.loadData(route,state).subscribe((res:any)=>{
+                observer.next();
+                observer.complete();
+            });
+        })
+    }
+
+    private loadData(route: ActivatedRouteSnapshot,state: RouterStateSnapshot): Observable<any> {
+        return new Observable((observer:any)=>{
+            let urlPath:string[] = state.url.split('/');
+            let clientId: string = this.getUrlValues(urlPath,'clientId');
+            this.processStorageService.clientId = clientId;
+            let countryCode : string = this.getUrlValues(urlPath,'country');
+            let productCode : string = this.getUrlValues(urlPath,'product');
+            this.featureUUID = this.getUrlValues(urlPath,'feature');
+            this.countryPipeLineService.getCountryClientOverview(clientId+'').subscribe((response:ApiDTO)=>{
+                response.client.countryList.forEach((country: CountryScope) => {
+                    if(country.countryCode.toLowerCase() === countryCode.toLowerCase()){
+                        this.processStorageService.countryCode = countryCode.toUpperCase();
+                        country.productList.forEach((product:Product) => {
+                            if(product['key'].toLowerCase() === productCode.toLowerCase()){
+                                this.processStorageService.productCode = productCode;
+                            }
+                        });
+                    }
+                });
+                let featureRequest = this.prepareFeatureRequestDto(this.processStorageService.countryCode, this.processStorageService.productCode);
+                this.pipelineService.loadFeatures(featureRequest).subscribe((res)=> { 
+                    if(res instanceof ErrorMap)
+                    this.returnFailedResponse(observer,res);
+                    else{
+                    if(route.params.featureuuid){
+                        this.pipelineService.loadUserStories(route.params.featureuuid).subscribe((userstoriesres) => {
+                            if(userstoriesres instanceof ErrorMap)
+                            this.returnFailedResponse(observer,userstoriesres);
+                        else{
+                           if(route.params.storyuuid){
+                               let storyRequestDto = this.prepareStoryRequestDto(route.params.featureuuid, route.params.storyuuid);
+                               this.pipelineService.loadUserStoryDetails(storyRequestDto).subscribe((userstorydetailres) => {
+                                if(userstorydetailres instanceof ErrorMap)
+                                    this.returnFailedResponse(observer,userstorydetailres);
+                                else
+                                  this.returnResponse(observer);
+                               });
+                           }else{
+                            this.returnResponse(observer);
+                           }
+                        }
+                        });    
+                    }else{
+                        this.returnResponse(observer);
+                    }
+                }
+                });
+            })    
+        })
+    }
+
+    private  updateFeatureNameForBreadCrumb():void {
+        if(this.processStorageService.generalSettingResponse){
+            this.processStorageService.generalSettingResponse.forEach((generalSettingDto: UIGeneralSettingDto, domain: string) => {
+              generalSettingDto.$features.forEach((feature : UIFeatureDto) => {
+                if(feature.$featureUUID === this.featureUUID){
+                    this.sharedService.selectedQuestionnaireTitle = feature.$featureName;
+                }
+              });
+            });
+          }
+    }
+    
+    private returnResponse(observer:any){
+        this.updateFeatureNameForBreadCrumb();
+        observer.next(true);
+        observer.complete();
+    }
+
+    private returnFailedResponse(observer:any,res:ErrorMap){
+        observer.error(res);
+        observer.complete();
+    }
+
+    private getUrlValues(urlPath: string[],findValue:string) : string{
+        let index = urlPath.findIndex(value => value && findValue.toLowerCase().includes(value.toLowerCase()));
+        let value: string = urlPath[index + 1];
+        return value;
+    }
+
+    prepareStoryRequestDto(featureuuid: string,storyuuid:string):UIStoryRequestDTO{
+        let uiStoryRequestDto = new UIStoryRequestDTO();
+        uiStoryRequestDto.featureuuid = featureuuid;
+        uiStoryRequestDto.storyuuid = storyuuid;
+        return uiStoryRequestDto;
+     }
+ 
+     prepareFeatureRequestDto(countryCode: string, productCode: string):UIFeatureRequestDTO{
+         let featureRequestDto = new UIFeatureRequestDTO();
+         featureRequestDto.$countryCode = countryCode;
+         featureRequestDto.$productCode = productCode;
+         return featureRequestDto;
+     }
+}
