@@ -1,0 +1,333 @@
+import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ButtonDetails } from "project/modules/process/model/common/button-details-dto";
+import { StateDetails } from "project/modules/process/model/common/state-dto";
+import { UIStoryRequestDTO } from "project/modules/process/model/common/ui-story-request-dto";
+import { UIStoryDto } from "project/modules/process/model/ui/ui-story-dto";
+import { UIUserStoryComment } from "project/modules/process/model/ui/ui-user-story-comment-dto";
+import { UIUserStoryDetails } from "project/modules/process/model/ui/ui-user-story-details-dto";
+import { UIUserStoryNotes } from "project/modules/process/model/ui/ui-user-story-notes-dto";
+import { ProcessPipelineService } from "project/modules/process/service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "project/modules/process/service/util/process-storage.service";
+import { ProcessConstants } from "project/modules/process/service/util/process.constants";
+import { StoryDetailsConverter } from "project/modules/process/service/worker/converter/story-details-converter";
+import { SharedService } from "project/shared/services/shared-service/shared.service";
+import { ErrorMap } from "project/shared/services/util/error-map.util";
+import { StoryDetailsContainerComponent } from "../story-details-container.component";
+import { forkJoin } from 'rxjs';
+import { ActionDetails } from "project/modules/process/model/common/action-details-dto";
+
+@Component({
+  selector: 'adp-story-details',
+  templateUrl: './adp-story-details.component.html'
+})
+export class AdpStoryDetailsComponent extends StoryDetailsContainerComponent implements OnInit, OnDestroy, AfterViewInit {
+
+  public inputValue: string;
+  public orginalValue:string;
+  public action: string = 'Save_in_Cache';
+  public charactersLimited:number | string;
+  public displayHelpText: string |number;
+  items: ActionDetails[] = [];
+  public selectedState:string;
+
+  public submitPopup = false;
+  public sendbackPopup = false;
+  public enableDescriptionEdit: boolean = false;
+  
+  
+
+  
+  public buttons: ButtonDetails[] = [];
+  public storyStateFilter:boolean = false;
+  public selectedStoryState:string[];
+  
+  @ViewChild('appendButtons') button: any;
+
+  @ViewChild('filterbutton') filterbutton: any;
+  @ViewChild('filterpane') filterpane: any;
+  public existingNotes: UIUserStoryNotes | null;
+
+  constructor(private router: Router, public processStorageService: ProcessStorageService,
+    public sharedService: SharedService, public processPipeline: ProcessPipelineService,
+    public activatedRoute: ActivatedRoute, private cdr: ChangeDetectorRef) {
+    super(sharedService, processStorageService, processPipeline,activatedRoute);
+  }
+
+ 
+
+  ngOnInit(): void {
+    this.setData();
+    this.processStorageService.storyStateStats();
+    this.initialDataLoad();
+  }
+
+  ngAfterViewInit(): void {
+    this.prepareStoryStateButtons();
+  }
+  private setData(): void {
+    super.setIntialData();
+    this.setStoryDetailsAndStoryMap();
+    this.highlightStorySelection(this.currentUserStory);
+  }
+
+  private initialDataLoad(): void {
+    this.items = [];
+        this.items.push(ProcessConstants.readyForDemo);
+        this.items.push(ProcessConstants.demoed);
+        this.items.push(ProcessConstants.demoPassed);
+        this.items.push(ProcessConstants.demoFailed);
+        
+
+}
+
+applyChange(event: any): void {
+  this.selectedState = event.detail.value;
+}
+ 
+
+  private setStoryDetailsAndStoryMap(): void {
+    if (this.processStorageService.userStoryDetails) {
+      this.storyDetails = StoryDetailsConverter.createNewUIStoryDetailsDtoFromExistingUIStoryDetailsDto(this.processStorageService.userStoryDetails);
+      let stateDetails = this.processStorageService.processStateMap.get(this.storyDetails.$state + '-' + this.sharedService.persona);
+      if (stateDetails)
+        this.storyStateDetails = stateDetails;
+    }
+    this.userStories = [...this.processStorageService.userStories];
+    this.selectedStoryState = [];
+    this.orginalValue = "";
+    this.storyAttributes.storyStateDetails = this.storyStateDetails;
+    this.storyAttributes.storyDetails = this.storyDetails;
+
+  }
+
+
+  private performStoryAction(action: string): void {
+    let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+    storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+    storyRequestDto.storyuuid = this.storyDetails.$storyuuid;
+    this.saveUserStoryDetails(storyRequestDto, action).subscribe((res) => {
+      if(!(res instanceof ErrorMap)){
+      this.processPipeline.loadUserStoryDetails(storyRequestDto).subscribe((response) => {
+        if(!(response instanceof ErrorMap)){
+          this.setStoryDetailsAndStoryMap();
+          this.prepareStoryStateButtons();
+          this.processStorageService.storyStateStats();
+        }
+      });
+    }
+    });
+  }
+
+  public closeStory() {
+    let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+    storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+    storyRequestDto.storyuuid = this.storyDetails.$storyuuid;
+    if(this.storyStateDetails.$isEditAllowed){
+      this.saveUserStoryDetails(storyRequestDto, ProcessConstants.SAVE_IN_CACHE).subscribe();
+    }
+    delete this.processStorageService.userStoryDetails;
+    this.router.navigateByUrl(this.router.url.substring(0, this.router.url.indexOf('/story/')));
+    this.cdr.detectChanges();
+  }
+
+  public modifiedDesc(event: any) : void{
+    this.inputValue = event.detail;
+    this.numberOfCharactersRemaining();
+  }
+
+  public onDescriptionAdd(): void {
+    if (this.storyDetails) {
+      this.orginalValue = this.storyDetails.$description;
+      if (this.processStorageService.userStoryDetails) {
+        this.processStorageService.userStoryDetails.$description = this.inputValue;
+        this.existingNotes = StoryDetailsConverter.checkUINotes(this.processStorageService.userStoryDetails.$notes);
+      }
+      this.saveStoryDetails(ProcessConstants.UPDATE_DESCRIPTION);
+      this.enableDescriptionEdit = false; 
+      this.displayHelpText ='';
+    }
+  }
+
+ 
+
+  public addComment(comment: UIUserStoryComment): void {
+    if (this.processStorageService.userStoryDetails) {
+      this.processStorageService.userStoryDetails.$commentsList = [comment];
+      this.existingNotes = StoryDetailsConverter.checkUINotes(this.processStorageService.userStoryDetails.$notes);
+    }
+    this.saveStoryDetails(ProcessConstants.ADD_COMMENT);
+  }
+
+  public sendToClient() {
+    if (this.processStorageService.userStoryDetails)
+      this.currentFeature.$userStoryDetailsList = [this.processStorageService.userStoryDetails];
+    this.processPipeline.sendtoclient(this.currentFeature).subscribe((res) => {
+      if (!(res instanceof ErrorMap)) {
+        let storyRequestDto: UIStoryRequestDTO = new UIStoryRequestDTO();
+        if (this.currentFeature.$userStoryDetailsList && this.currentFeature.$userStoryDetailsList.length) {
+          storyRequestDto.featureuuid = this.currentFeature.$featureUUID;
+          storyRequestDto.storyuuid = this.currentFeature.$userStoryDetailsList[0].$storyuuid;
+          if(this.processStorageService.userStories)
+          this.processStorageService.userStories.length = 0;
+          let userStories =  this.processPipeline.loadUserStories(this.currentFeature.$featureUUID);
+          let userStory =  this.processPipeline.loadUserStoryDetails(storyRequestDto);
+          forkJoin([userStories, userStory]).subscribe(() => this.setData());
+        }
+      }
+    });
+  }
+
+
+  public saveStoryDetails(action: string) {
+    let userStoryInput = this.prepareStoryRequestDto(this.currentFeature.$featureUUID, this.currentUserStory.$storyUUID);
+    this.processPipeline.saveUserStoryDetails(userStoryInput, action).subscribe((res) =>{
+      if(res instanceof ErrorMap){
+        this.storyDetails.$description = this.orginalValue;
+      }else {
+        this.storyDetails = StoryDetailsConverter.covertApiStoryDetailsDtoToUIStoryDetailsDto(res,this.sharedService.persona,this.processStorageService.processStateMap);
+        this.processStorageService.userStoryDetails = StoryDetailsConverter.covertApiStoryDetailsDtoToUIStoryDetailsDto(res,this.sharedService.persona,this.processStorageService.processStateMap);
+        if(this.existingNotes){
+          this.storyDetails.$notes = this.existingNotes;
+          this.processStorageService.userStoryDetails.$notes = this.existingNotes;
+          this.existingNotes = null;
+        }
+        this.storyAttributes.storyDetails = this.processStorageService.userStoryDetails;
+        this.updateSuportText(this.storyAttributes.storyDetails.$storyuuid);
+        this.selectedState='';
+      }
+    });
+  }
+
+  public updateSuportText(storyUuid: string){
+    let index = this.processStorageService.userStories.findIndex((userStory) => userStory.$storyUUID === storyUuid);
+    if(index != -1){
+      let userStoryDTO:UIStoryDto = this.processStorageService.userStories[index];
+      userStoryDTO.$supportText = userStoryDTO.$scope === ProcessConstants.OUT_SCOPE ? ProcessConstants.OUT_OF_SCOPE:userStoryDTO.$supportText;
+    }
+  }
+  public highlightStorySelection(story: UIStoryDto) {
+    this.userStories.forEach((s: UIStoryDto) => {
+      s.$storyCardCss = 'cursor-pointer';
+      s.$variant = s.$scope === ProcessConstants.OUT_SCOPE ? 'filled' : 'shadowed';
+      s.$supportText = s.$scope === ProcessConstants.OUT_SCOPE ? ProcessConstants.OUT_OF_SCOPE:s.$supportText;
+    });
+    story.$storyCardCss = story.$storyCardCss + ' shadow-outline-focus';
+  }
+
+  public storyClicked(story: UIStoryDto) {
+    if (this.processStorageService.userStoryDetails) {
+      let storyRequestDto = this.prepareStoryRequestDto(this.currentFeature.$featureUUID, this.processStorageService.userStoryDetails.$storyuuid);
+      if(this.storyStateDetails.$isEditAllowed ){
+        this.saveUserStoryDetails(storyRequestDto, ProcessConstants.SAVE_IN_CACHE).subscribe(() => {
+          this.userStories = [...this.processStorageService.userStories];
+          this.updateSuportText(storyRequestDto.storyuuid);
+        });
+      }
+      this.router.navigateByUrl(this.router.url.replace(this.processStorageService.userStoryDetails.$storyuuid, story.$storyUUID)).then((res) => {
+        this.updateStoryDetails();
+        return res;
+      });
+    }
+  }
+
+
+
+  public disableEdit():boolean{
+    let result = true;
+    if(this.processStorageService.userStoryDetails){
+        let storyStateDetails: StateDetails | undefined = this.processStorageService.processStateMap.get(this.processStorageService.userStoryDetails.$state + "-" + this.sharedService.persona);
+        if (storyStateDetails)
+            result = !(storyStateDetails.$state.includes('APPROVED') || storyStateDetails.$state.includes('SIGNED_OFF') ||storyStateDetails.$state.includes('Ready_for_Demo')||storyStateDetails.$state.includes('Demoed') ||storyStateDetails.$state.includes('Demo_Passed') ||storyStateDetails.$state.includes('Demo_Failed')) ;
+    }
+    return result && this.inScopeCheck();
+
+  }
+
+  
+
+  public openFilter(): void {
+    this.storyStateFilter = true;
+    this.filterpane.nativeElement.open(this.filterbutton);
+  }
+  public closeFilter(event:boolean):void {
+    this.storyStateFilter = event ;
+    this.filterpane.nativeElement.close();
+  }
+  public updateSelectedStoryState(event:string[]):void {
+    if(event)
+    this.selectedStoryState = [...event];
+  }
+
+  public closefiltertags(index:number){
+    this.selectedStoryState.splice(index,1);
+    this.selectedStoryState = [...this.selectedStoryState];
+  }
+
+  ngOnDestroy(): void {
+    delete this.processStorageService.userStoryDetails;
+  }
+
+  public numberOfCharactersRemaining(): void{
+    this.charactersLimited = ProcessConstants.charactersLimit-this.inputValue.length;
+    this.displayHelpText = ProcessConstants.helpText +this.charactersLimited + ProcessConstants.charactersRemaining;
+    if(this.charactersLimited == 0) {
+      this.displayHelpText =ProcessConstants.helpText + ProcessConstants.reachedLimt;
+    }
+    if(this.enableDescriptionEdit==false){  
+      this.displayHelpText ='';
+    }
+  }
+
+  public Closingfocus($event: boolean) {
+    this.enableDescriptionEdit = false
+    this.displayHelpText ='';
+
+  }
+
+
+  public actionCompleted(event: boolean): void {
+    if (event && this.processStorageService.userStoryDetails) {
+      if(this.storyDetails.$storyuuid === this.processStorageService.userStoryDetails.$storyuuid){
+        this.updateStoryDetails();
+        this.processStorageService.storyStateStats();
+      }else{
+      this.router.navigateByUrl(this.router.url.replace(this.storyDetails.$storyuuid,this.processStorageService.userStoryDetails.$storyuuid)).then((res) => {
+        this.updateStoryDetails();
+        this.processStorageService.storyStateStats();
+        return res;
+      });
+    }
+    }
+  }
+
+  private updateStoryDetails():void{
+    this.setData();
+    this.prepareStoryStateButtons();
+  }
+
+  public sendbacktoclient(): void {
+    this.performStoryAction(ProcessConstants.SEND_BACK_TO_CLIENT);
+  }
+
+  public sendbacktoclientpopup(): void {
+    this.sendbackPopup = true;
+  }
+  public approve(): void {
+    this.performStoryAction(ProcessConstants.SEND_ADP_SIGN_OFF);
+  }
+  public sendStoryToClient():void {
+    this.performStoryAction(ProcessConstants.SEND_TO_CLIENT);
+  }
+
+  public reopenCompleted(event:boolean):void {
+    if(event){
+      this.setData();
+      this.prepareStoryStateButtons();
+    }
+  }
+
+  saveNewState(){
+    this.saveStoryDetails(this.selectedState);
+  }
+}
