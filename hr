@@ -1,0 +1,56 @@
+import { HttpClientTestingModule } from "@angular/common/http/testing";
+import { ChangeDetectorRef } from "@angular/core";
+import { ComponentFixture, TestBed, waitForAsync } from "@angular/core/testing";
+import { RouterTestingModule } from "@angular/router/testing";
+import { StoryAttributeDetails } from "project/modules/process/model/common/story-attribute-details-dto";
+import { UIStoryDto } from "project/modules/process/model/ui/ui-story-dto";
+import { NameSearch } from "project/modules/process/service/pipe/name-search.pipe";
+import { StateSearch } from "project/modules/process/service/pipe/state-search.pipe";
+import { ProcessPipelineService } from "project/modules/process/service/pipeline/process-pipeline.service";
+import { ProcessStorageService } from "project/modules/process/service/util/process-storage.service";
+import { SharedService } from "project/shared/services/shared-service/shared.service";
+import { StorageService } from "project/shared/services/util/storage.service";
+import { AdpStoryDetailsComponent } from "./adp-story-details.component";
+
+
+describe('AdpStoryDetailsComponent',() =>{
+    let processStorageService: ProcessStorageService;
+    let component : AdpStoryDetailsComponent;
+    let fixture: ComponentFixture<AdpStoryDetailsComponent>;
+    let processPipelineService: ProcessPipelineService;
+    beforeEach(
+        waitForAsync(() => {
+          TestBed.configureTestingModule({
+            declarations: [AdpStoryDetailsComponent, StateSearch,NameSearch],
+            providers: [ProcessStorageService,AdpStoryDetailsComponent,ProcessPipelineService,StorageService,SharedService,ChangeDetectorRef],
+            imports: [RouterTestingModule, HttpClientTestingModule]
+          }).compileComponents();
+
+          component=TestBed.inject(AdpStoryDetailsComponent);
+          processStorageService = TestBed.inject(ProcessStorageService);
+        })
+      );
+      beforeEach(() => {
+        fixture = TestBed.createComponent(AdpStoryDetailsComponent);
+        component = fixture.componentInstance;
+        processStorageService = TestBed.inject(ProcessStorageService);
+        processPipelineService =  TestBed.inject(ProcessPipelineService);
+      });
+
+      it('modifiedDesc',() =>{
+        let event: any = {detail:{value:2}};
+        component.inputValue = event.detail;
+        component.modifiedDesc(event);  
+      })
+
+      it('onDescriptionAdd',() =>{
+        let event: any = {detail:{value:2}};
+        component.inputValue = event.detail;
+        component.modifiedDesc(event);  
+      })
+
+      it('initialDataLoad()',() =>{
+      
+      })
+    
+    });
